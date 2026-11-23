@@ -64,6 +64,8 @@ PATTERNS: dict[str, str] = {
     "supplier_sku": r"SS-\d{6}",
     "gt": r"GT-\d{5}",
     "week": rf"{YEAR}W(0[1-9]|[1-4]\d|5[0-3])",
+    # Any ISO week 2025-2027: PO receipt weeks of received orders fall in 2025.
+    "iso_week": r"20(25|26|27)W(0[1-9]|[1-4]\d|5[0-3])",
 }
 
 REGEX: dict[str, re.Pattern[str]] = {k: re.compile(rf"^{v}$") for k, v in PATTERNS.items()}

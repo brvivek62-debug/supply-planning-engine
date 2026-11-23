@@ -21,7 +21,7 @@ def test_every_formatter_matches_its_regex():
         "lead_time": ids.lead_time_id(5), "capacity": ids.capacity_id(5), "inventory": ids.inventory_id(5),
         "txn": ids.txn_id(5), "po_event": ids.po_event_id(5), "shortage_event": ids.shortage_event_id(5),
         "bom": ids.bom_id(5), "substitute": ids.substitute_id(5), "supplier_sku": ids.supplier_sku_id(5),
-        "gt": ids.gt_id(5), "week": "2026W52",
+        "gt": ids.gt_id(5), "week": "2026W52", "iso_week": "2025W40",
         "demand": ids.demand_id(ids.sku_id(3000), ids.location_id(50), "2026W52"),
     }
     assert set(samples) == set(ids.REGEX)

@@ -62,3 +62,15 @@ def date_of_offset(offset: int, year: int = YEAR) -> date:
 def lead_weeks(production_days: int, transit_days: int) -> int:
     """total_lead_weeks = ceil((production_days + transit_days) / 7)."""
     return math.ceil((int(production_days) + int(transit_days)) / 7)
+
+
+def offset_label(offset: int, year: int = YEAR) -> str:
+    """ISO week label of planning-week index ``offset`` (0 -> '2025W52', 1 -> '2026W01')."""
+    iso = date_of_offset(offset, year).isocalendar()
+    return f"{iso[0]}W{iso[1]:02d}"
+
+
+def label_offset(label: str, year: int = YEAR) -> int:
+    """Planning-week index of any ISO week label (inverse of ``offset_label``)."""
+    y, n = parse_week(label)
+    return week_offset(date.fromisocalendar(y, n, 1), year)

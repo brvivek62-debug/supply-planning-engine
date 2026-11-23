@@ -4,8 +4,8 @@
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | Scaffold | ✅ done |
-| 1 | Schema & docs | ⏳ next |
-| 2 | Generator | — |
+| 1 | Schema & docs | ✅ done |
+| 2 | Generator | ⏳ next |
 | 3 | Planning | — |
 | 4 | Mitigations | — |
 | 5 | Edge cases & ground truth | — |
@@ -19,8 +19,13 @@
 - `CLAUDE.md`, `PROGRESS.md`, `docs/decisions.md`, `LICENSE`.
 - Tests: 14 passing (ids, calendar, rng, config, CLI).
 
+## Phase 1 — done
+- `src/planner/schema.py`: 24 tables (11 core entities + bridges, events, planner outputs, ground truth) with dtype, required, allowed values, unit, unique, rule, description, PK, natural key, FKs (incl. composite FKs to `sku_location`), polymorphic refs, lifecycles.
+- `python -m planner docs` writes `docs/data_dictionary.md`, `sql/schema.sql` (SQLite DDL with PK/FK/UNIQUE/CHECK), `docs/erd.md` (Mermaid erDiagram, cardinality tables incl. N:M bridges and 1:0..1, effective-dated entities, lifecycle state diagrams).
+- Tests: 69 passing (adds schema completeness, FK ordering, SQLite load with FK + CHECK enforcement, deterministic docs, committed docs up to date).
+
 ## Next
-- Phase 1: `schema.py` for every table; `python -m planner docs` generates `docs/data_dictionary.md`, `sql/schema.sql`, `docs/erd.md`.
+- Phase 2: generator (Section 9 steps 1–7) at test and starter scale; starter generate < 30 s; PK/FK/enum/date checks; ON_HAND = ledger.
 
 ## Open issues
 - None.
