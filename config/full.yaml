@@ -1,0 +1,82 @@
+# Scale: full. Only these numbers differ between scales; the generator code is identical.
+scale: full
+seed: 20261022
+
+volumes:
+  skus: 3000
+  locations: 50
+  weeks: 52
+  suppliers: 500
+  purchase_orders: 10000
+  location_type_mix: {PLANT: 5, DC: 10, STORE: 35}
+
+injection:
+  anomalies_per_type: 40
+  boundary_per_type: 15
+
+as_of_date: "2025-12-29"        # planning run at start of 2026W01
+year: 2026
+history_start_date: "2025-09-01" # inventory ledger window start
+po_order_date_start: "2025-09-01"
+po_order_date_end: "2026-04-30"
+currency: INR
+base_uom: EA
+
+assortment:
+  locations_per_finished_sku: [6, 10]   # BUY FINISHED SKUs stocked at 6-10 DC/STORE locations
+  component_share: 0.15                 # share of SKUs that are COMPONENT (BUY, plants only)
+  make_share_of_finished: 0.10          # share of FINISHED that are MAKE (plants only)
+  components_per_make: [2, 4]
+  categories: 8
+
+demand:
+  abc_share: {A: 0.20, B: 0.30, C: 0.50}
+  promo_rate: 0.03                      # share of SKU-location-weeks that are PROMO
+  promo_multiplier: [2.0, 4.0]
+  seasonal_peak_threshold: 1.25         # seasonal factor at/above this => SEASONAL_PEAK
+  seasonality_amplitude: [0.15, 0.45]
+  nb_dispersion: 8.0                    # negative-binomial size parameter
+
+supply:
+  alternates_per_buy_sku: [0, 2]
+  constrained_supplier_share: 0.10
+  headroom_normal: [1.1, 1.6]
+  headroom_constrained: [0.6, 0.9]
+  on_time_beta: [18, 2.5]
+  lead_time_change_share: 0.05
+  lead_time_change_week: 27
+  substitute_share: 0.15
+  substitute_approved_share: 0.70
+
+purchase_orders:
+  received_share: 0.20
+  cancelled_share: 0.04
+  delay_rate: 0.08
+  delay_weeks: [1, 3]
+
+inventory:
+  opening_cover_noise: 0.35             # +/- relative noise on (lead time + SS weeks) cover
+  adjustment_rate: 0.05
+
+production:
+  firm_weeks: 4
+
+policy:
+  approval_cost_threshold_inr: 200000
+  approval_var_share: 0.25
+  planned_order_cover_weeks: 4
+  transfer_lead_weeks_same_region: 1
+  transfer_lead_weeks_cross_region: 2
+
+costs:
+  air_premium_per_ea: 18.0
+  alt_supplier_freight_per_ea: 4.0
+  transfer_cost_per_ea_same_region: 3.0
+  transfer_cost_per_ea_cross_region: 7.5
+  overtime_premium_per_ea: 12.0
+  backorder_service_penalty_per_ea: 25.0
+
+scoring:
+  w_coverage: 0.6
+  w_timeliness: 0.25
+  w_cost: 0.15
