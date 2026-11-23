@@ -16,6 +16,20 @@ def _not_yet(name: str, phase: int) -> Callable[[argparse.Namespace], int]:
     return run
 
 
+def cmd_generate(args: argparse.Namespace) -> int:
+    from pathlib import Path
+
+    from planner import generate, tableio
+    cfg = load_config(args.scale, args.seed)
+    out = Path(args.out) if args.out else tableio.data_dir(cfg.scale)
+    counts = generate.run(cfg, out)
+    width = max(len(k) for k in counts)
+    print(f"[planner] generated scale={cfg.scale} seed={cfg.seed} -> {out}")
+    for name, n in counts.items():
+        print(f"  {name:<{width}}  {n:>10,}")
+    return 0
+
+
 def cmd_docs(args: argparse.Namespace) -> int:
     from planner.docs_gen import write_all
     for path in write_all():
@@ -25,7 +39,7 @@ def cmd_docs(args: argparse.Namespace) -> int:
 
 COMMANDS: dict[str, tuple[str, Callable[[argparse.Namespace], int], bool, bool]] = {
     # name: (help, handler, takes --scale, takes --seed)
-    "generate": ("Generate baseline data, inject labelled cases, write ground truth", _not_yet("generate", 2), True, True),
+    "generate": ("Generate baseline data, inject labelled cases, write ground truth", cmd_generate, True, True),
     "plan": ("Quality gate, PAB, planned orders, shortages, mitigations, decisions", _not_yet("plan", 3), True, False),
     "validate": ("Run all checks -> reports/validation_summary.{md,json}", _not_yet("validate", 6), True, False),
     "evaluate": ("Metrics and detection precision/recall vs ground truth", _not_yet("evaluate", 5), True, False),
@@ -46,6 +60,8 @@ def build_parser() -> argparse.ArgumentParser:
             sp.add_argument("--scale", choices=SCALES, default="starter")
         if seed:
             sp.add_argument("--seed", type=int, default=DEFAULT_SEED)
+        if name == "generate":
+            sp.add_argument("--out", default=None, help="output directory (default data/<scale>)")
         sp.set_defaults(func=handler)
     return p
 

@@ -576,8 +576,9 @@ PRODUCTION_PLAN = Table(
         _qty("capacity_used_ea", "Plant capacity consumed.",
              rule="= planned_qty_ea; sum per plant-week <= production_capacity"),
         _qty("requested_qty_ea", "Net requirement before capacity / component cuts."),
+        _qty("capacity_cut_ea", "Quantity cut because plant capacity was full."),
         _qty("component_cut_ea", "Quantity cut because a component was short.",
-             rule="requested - capacity cut - component cut = planned"),
+             rule="requested_qty_ea - capacity_cut_ea - component_cut_ea = planned_qty_ea"),
     ),
 )
 

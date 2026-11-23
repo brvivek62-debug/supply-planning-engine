@@ -29,3 +29,22 @@ One line each: decision — reason.
 - SKU lifecycle and supplier status are snapshot states (no event table); PO and shortage lifecycles have append-only event tables — the brief asks for event history on state changes that the workflow performs.
 - Booleans stored as `true/false` in CSV/JSON and `1/0` in SQLite — SQLite has no boolean type.
 - Shortage event actor roles limited to PLANNER and OPERATIONS_MANAGER — those are the brief's actors who own shortage decisions.
+
+## Phase 2
+- PO order dates run 2025-09-01 to 2025-12-28 (not to 2026-04) — the as-of date is 2025-12-29 and no PO event may be dated after it; open-PO receipts still extend into 2026 (up to ~W09 on SEA lanes).
+- PO status is never assigned: each PO gets a timeline (CREATED → CONFIRMED → SHIPPED → IN_TRANSIT [→ DELAYED → IN_TRANSIT] → RECEIVED, or → CANCELLED) and status is the last event before the as-of cut-off — status and event history cannot disagree.
+- Status classes are fixed first (20% RECEIVED, 4% CANCELLED, rest open) and order dates are drawn so the class is physically consistent with order week + lead time — hits the target mix exactly.
+- Delays on open POs are only assigned to POs already IN_TRANSIT before the as-of date — a delay cannot be known before the shipment moves; overall delay rate is topped up to 8%.
+- Open POs are allocated against supplier capacity at their revised receipt week (shrunk to a valid MOQ/multiple, or redrawn) — the baseline never exceeds capacity, so SUPPLIER_CAPACITY_EXCEEDED exceptions come only from injected anomalies (precision stays 1.0).
+- PO quantity = U(2, 4) weeks of the SKU-location's mean demand; every BUY SKU-location is equally likely to get a PO (`pair_weight_power: 0`) — weighting by demand put early-week PO load at 2× capacity; this keeps firm load ≈ 20% median utilisation and leaves room for planned orders.
+- Latent parameters (SKU base rate, location size, seasonality, "constrained" supplier flag, importer flag) live only in memory — constraint emerges from capacity numbers; no such flag is exported.
+- Supplier capacity = primary-SKU expected weekly load × headroom (1.1–1.6, or 0.6–0.9 for 10% of suppliers) × ±8% weekly noise; suppliers with no primary SKUs get 20–60% of the median load — gives alternates spare capacity.
+- ~15% of suppliers are importers whose standard lanes are SEA (5–9 wk); others use ROAD for same region, ROAD/RAIL for adjacent, RAIL for far regions; lane changes from 2026W27 stay inside the mode's typical band.
+- BOM is generated before sku_location (still inside step 2) — component stocking plants follow their parents' home plants. Every MAKE SKU is stocked at exactly one home plant.
+- `sku_location.safety_stock_qty` is filled after demand: round-half-up(safety_stock_weeks × mean weekly forecast), with dependent demand (parent forecast × qty_per) for components — it is a derived value.
+- Opening cover = (primary lead weeks + SS weeks) × U(0.65, 1.35) × `opening_cover_bias`; the ledger is back-solved so OPENING + RECEIPTs + ISSUE + ADJUSTMENT = target, and ON_HAND is then computed from the ledger sum.
+- ISSUE row omitted for SKU-locations with zero history demand (rule says ISSUE < 0) — avoids zero-quantity ledger rows.
+- FIRM production = forecast × U(0.95, 1.15) for W01–W04, scaled down proportionally where a plant-week exceeds capacity (cut recorded in `capacity_cut_ea`).
+- Added `production_plan.capacity_cut_ea` — makes requested − cuts = planned reconcilable.
+- Demand rows at full scale will be ~0.97M, not ~1.2M — 6–10 DC/STORE locations per BUY FINISHED SKU (as specified) × 2,295 SKUs × 52 weeks; kept the specified assortment range rather than inflating it.
+- Data files go to `data/<scale>/csv/<table>.csv` (test/starter) or `.csv.gz` (full); `data/test/` and `run_info.json` are git-ignored (run_info holds timing, so it is not reproducible by design).

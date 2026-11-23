@@ -8,3 +8,5 @@ tmp/
 *.egg-info/
 build/
 dist/
+data/test/
+data/*/run_info.json

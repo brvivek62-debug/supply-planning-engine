@@ -18,7 +18,7 @@ as_of_date: "2025-12-29"        # planning run at start of 2026W01
 year: 2026
 history_start_date: "2025-09-01" # inventory ledger window start
 po_order_date_start: "2025-09-01"
-po_order_date_end: "2026-04-30"
+po_order_date_end: "2025-12-28"  # last day before the as-of date (no events after as-of)
 currency: INR
 base_uom: EA
 
@@ -53,9 +53,13 @@ purchase_orders:
   cancelled_share: 0.04
   delay_rate: 0.08
   delay_weeks: [1, 3]
+  cover_weeks: [2, 4]                   # PO qty = U(cover) x mean weekly demand of the SKU-location
+  pair_weight_power: 0.0                # 0 = every SKU-location equally likely to have a PO
 
 inventory:
   opening_cover_noise: 0.35             # +/- relative noise on (lead time + SS weeks) cover
+  opening_cover_bias: 1.0               # multiplier on target cover (calibration knob)
+  history_weeks: 17                     # 2025-09-01 .. as-of
   adjustment_rate: 0.05
 
 production:
@@ -80,3 +84,6 @@ scoring:
   w_coverage: 0.6
   w_timeliness: 0.25
   w_cost: 0.15
+
+output:
+  format: csv.gz   # csv for test/starter, csv.gz for full (GitHub 50 MB limit)

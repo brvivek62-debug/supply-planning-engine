@@ -226,6 +226,7 @@ erDiagram
         string status
         int capacity_used_ea
         int requested_qty_ea
+        int capacity_cut_ea
         int component_cut_ea
     }
     EXCEPTION {

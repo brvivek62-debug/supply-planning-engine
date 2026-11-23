@@ -1,0 +1,11 @@
+location_id,location_name,location_type,city,region,is_active,effective_from
+LOC-001,Kochi Plant 1,PLANT,Kochi,SOUTH,true,2014-02-21
+LOC-002,Raipur Plant 1,PLANT,Raipur,CENTRAL,true,2012-08-26
+LOC-003,Nashik DC 1,DC,Nashik,WEST,true,2017-03-01
+LOC-004,Ranchi DC 1,DC,Ranchi,EAST,true,2016-05-24
+LOC-005,Gwalior DC 1,DC,Gwalior,CENTRAL,true,2020-01-27
+LOC-006,Kochi Store 1,STORE,Kochi,SOUTH,true,2019-08-26
+LOC-007,Visakhapatnam Store 1,STORE,Visakhapatnam,SOUTH,true,2013-02-26
+LOC-008,Kanpur Store 1,STORE,Kanpur,NORTH,true,2016-05-10
+LOC-009,Kochi Store 2,STORE,Kochi,SOUTH,true,2023-01-20
+LOC-010,Bhubaneswar Store 1,STORE,Bhubaneswar,EAST,true,2016-02-07

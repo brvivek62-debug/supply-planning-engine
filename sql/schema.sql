@@ -272,6 +272,7 @@ CREATE TABLE production_plan (
     status TEXT NOT NULL CHECK (status IN ('FIRM', 'PLANNED')),
     capacity_used_ea INTEGER NOT NULL CHECK (capacity_used_ea >= 0),
     requested_qty_ea INTEGER NOT NULL CHECK (requested_qty_ea >= 0),
+    capacity_cut_ea INTEGER NOT NULL CHECK (capacity_cut_ea >= 0),
     component_cut_ea INTEGER NOT NULL CHECK (component_cut_ea >= 0),
     PRIMARY KEY (prod_plan_id),
     UNIQUE (sku_id, plant_location_id, week),
