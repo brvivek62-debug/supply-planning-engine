@@ -11,6 +11,7 @@ from planner import ids
 from planner.schema import REGIONS
 
 from .common import Ctx
+from .demand import promo_uplift, season_factor
 
 ADJACENT = {frozenset(p) for p in [("NORTH", "CENTRAL"), ("NORTH", "WEST"), ("NORTH", "EAST"), ("SOUTH", "CENTRAL"),
                                     ("SOUTH", "WEST"), ("EAST", "CENTRAL"), ("WEST", "CENTRAL")]}
@@ -78,16 +79,38 @@ def gen_lead_time(ctx: Ctx) -> pd.DataFrame:
     return df.reset_index(drop=True)
 
 
+def expected_sku_load(ctx: Ctx) -> pd.DataFrame:
+    """Expected weekly demand per SKU (all locations) incl. category seasonality and expected promo uplift.
+
+    FINISHED: latent rate x category season. COMPONENT: sum over BOM parents of parent load x qty_per.
+    """
+    sku = ctx["sku"].set_index("sku_id")
+    exp_sku = ctx.aux["exp_rate"].groupby(level="sku_id").sum()
+    fin = [s for s in exp_sku.index if sku.at[s, "sku_type"] == "FINISHED"]
+    m = pd.DataFrame(exp_sku.loc[fin].to_numpy()[:, None] * season_factor(ctx, sku.loc[fin, "category"].to_numpy())
+                     * promo_uplift(ctx), index=fin)
+    comp = {}
+    for p, c, q in ctx["bom"][["parent_sku_id", "component_sku_id", "qty_per"]].itertuples(index=False):
+        if p in m.index:
+            comp[c] = comp.get(c, 0.0) + m.loc[p].to_numpy() * q
+    cm = pd.DataFrame.from_dict(comp, orient="index", columns=m.columns) if comp else None
+    return pd.concat([m, cm]) if cm is not None else m
+
+
 def gen_supplier_capacity(ctx: Ctx) -> pd.DataFrame:
-    """Capacity = expected weekly load of the supplier's primary SKUs x headroom (x weekly noise)."""
+    """Capacity per week = the supplier's expected (seasonal) load of its primary SKUs in that week
+    x headroom (x weekly noise)."""
     rng = ctx.rngs("supplier_capacity")
     sup, ss = ctx["supplier"], ctx["supplier_sku"]
     sc = ctx.cfg["supply"]
     W = ctx.cfg.weeks
-    exp_sku = ctx.aux["exp_rate"].groupby(level="sku_id").sum()
-    prim = ss[ss["is_primary"]]
-    load = prim.assign(r=prim["sku_id"].map(exp_sku).fillna(0.0)).groupby("supplier_id")["r"].sum()
-    load = load.reindex(sup["supplier_id"], fill_value=0.0)
+    sku_load = expected_sku_load(ctx)
+    prim = ss[ss["is_primary"] & ss["sku_id"].isin(sku_load.index)]
+    wload = sku_load.loc[prim["sku_id"]].set_index(prim["supplier_id"].to_numpy()).groupby(level=0).sum()
+    wload = wload.reindex(sup["supplier_id"], fill_value=0.0)
+    load = wload.mean(axis=1)
+    shape = (wload.to_numpy() / np.maximum(load.to_numpy()[:, None], 1e-9))
+    shape = np.where(load.to_numpy()[:, None] > 0, shape, 1.0)
     positive = load[load > 0]
     floor_load = float(positive.median()) if len(positive) else 100.0
     constrained = ctx.aux["constrained"].reindex(sup["supplier_id"]).to_numpy()
@@ -97,7 +120,7 @@ def gen_supplier_capacity(ctx: Ctx) -> pd.DataFrame:
     base_load = np.where(load.to_numpy() > 0, load.to_numpy(), floor_load * rng.uniform(0.2, 0.6, len(sup)))
     base = base_load * head
     noise = rng.uniform(0.92, 1.08, (len(sup), W))
-    cap = np.maximum(1, np.floor(base[:, None] * noise + 0.5)).astype(np.int64)
+    cap = np.maximum(1, np.floor(base[:, None] * shape * noise + 0.5)).astype(np.int64)
     df = pd.DataFrame({
         "supplier_id": np.repeat(sup["supplier_id"].to_numpy(), W),
         "week": np.tile(cal.week_labels(W), len(sup)),
@@ -115,12 +138,18 @@ def gen_production_capacity(ctx: Ctx) -> pd.DataFrame:
     exp = ctx.aux["exp_rate"]
     make = set(sku.loc[sku["sourcing_type"] == "MAKE", "sku_id"])
     e = exp[[s in make for s in exp.index.get_level_values("sku_id")]]
-    load = e.groupby(level="location_id").sum().reindex(plants, fill_value=0.0)
-    base = np.where(load.to_numpy() > 0, load.to_numpy(), 100.0) * rng.uniform(1.1, 1.4, len(plants))
+    # expected (seasonal) weekly load per plant: MAKE rate x its category season
+    cats = sku.set_index("sku_id").loc[e.index.get_level_values("sku_id"), "category"].to_numpy()
+    wl = pd.DataFrame(e.to_numpy()[:, None] * season_factor(ctx, cats) * promo_uplift(ctx),
+                      index=e.index.get_level_values("location_id"))
+    wl = wl.groupby(level=0).sum().reindex(plants, fill_value=0.0).to_numpy()
+    load = wl.mean(axis=1)
+    shape = np.where(load[:, None] > 0, wl / np.maximum(load[:, None], 1e-9), 1.0)
+    base = np.where(load > 0, load, 100.0) * rng.uniform(1.1, 1.4, len(plants))
     noise = rng.uniform(0.95, 1.05, (len(plants), W))
     maint = rng.integers(0, W, len(plants))            # one maintenance week per plant at 50%
     noise[np.arange(len(plants)), maint] *= 0.5
-    cap = np.maximum(1, np.floor(base[:, None] * noise + 0.5)).astype(np.int64)
+    cap = np.maximum(1, np.floor(base[:, None] * shape * noise + 0.5)).astype(np.int64)
     return pd.DataFrame({
         "plant_location_id": np.repeat(plants, W),
         "week": np.tile(cal.week_labels(W), len(plants)),

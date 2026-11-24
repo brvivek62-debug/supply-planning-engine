@@ -509,7 +509,7 @@ Contiguous runs of weeks with PAB below safety stock for one SKU-location.
 | `shortage_qty_ea` | integer | Yes | — | EA | No | — | = max(0, -min closing_qty in the run); >= 0 | Unfilled quantity. |
 | `below_ss_qty_ea` | integer | Yes | — | EA | No | — | = max(safety_stock - closing_qty) in the run; >= 0 | Gap to safety stock. |
 | `value_at_risk_inr` | decimal | Yes | — | INR | No | — | = shortage_qty_ea x sku.unit_price_inr; >= 0; rounded to 2 dp | Revenue at risk. |
-| `primary_cause` | string | Yes | `DEMAND_SPIKE`, `PO_DELAYED`, `SUPPLIER_CAPACITY`, `LEAD_TIME_FENCE`, `LOW_OPENING_STOCK`, `COMPONENT_SHORTAGE` | — | No | — | one of this shortage's shortage_cause rows; in allowed values | Cause with the largest contribution. |
+| `primary_cause` | string | Yes | `DEMAND_SPIKE`, `PO_DELAYED`, `SUPPLIER_CAPACITY`, `LEAD_TIME_FENCE`, `LOW_OPENING_STOCK`, `COMPONENT_SHORTAGE`, `PRODUCTION_CAPACITY` | — | No | — | one of this shortage's shortage_cause rows; in allowed values | Cause with the largest contribution. |
 | `explanation` | string | Yes | — | — | No | — | non-empty | One generated sentence naming quantities, weeks and evidence IDs. |
 | `priority_score` | decimal | Yes | — | — | No | — | = value_at_risk x criticality weight (3/2/1) x 1/sqrt(1 + weeks from as-of to start); >= 0; rounded to 4 dp | Priority score. |
 | `priority_rank` | integer | Yes | — | — | Yes | — | dense order by priority_score desc, then shortage_id; >= 1 | 1 = most urgent. |
@@ -527,7 +527,7 @@ Bridge (Shortage N:M evidence): each derived cause with its evidence record.
 | Field | Type | Required | Allowed values | Unit | Unique | Key | Validation rule | Description |
 |---|---|---|---|---|---|---|---|---|
 | `shortage_id` | string | Yes | — | — | Part of composite PK | PK<br>FK→shortage.shortage_id | matches ID pattern `shortage` | Shortage. |
-| `cause_code` | string | Yes | `DEMAND_SPIKE`, `PO_DELAYED`, `SUPPLIER_CAPACITY`, `LEAD_TIME_FENCE`, `LOW_OPENING_STOCK`, `COMPONENT_SHORTAGE` | — | Part of composite PK | PK | in allowed values | Rule-based cause. |
+| `cause_code` | string | Yes | `DEMAND_SPIKE`, `PO_DELAYED`, `SUPPLIER_CAPACITY`, `LEAD_TIME_FENCE`, `LOW_OPENING_STOCK`, `COMPONENT_SHORTAGE`, `PRODUCTION_CAPACITY` | — | Part of composite PK | PK | in allowed values | Rule-based cause. |
 | `evidence_type` | string | Yes | `forecast_demand`, `purchase_order`, `planned_order`, `supplier_capacity`, `lead_time`, `inventory`, `production_plan`, `bom` | — | No | — | in allowed values | Table holding the evidence record. |
 | `evidence_id` | string | Yes | — | — | Part of composite PK | PK<br>polymorphic ref | resolves to a row of evidence_type | Evidence record ID. |
 | `contribution_qty_ea` | integer | Yes | — | EA | No | — | >= 0 | Quantity attributed to this cause (0 when not quantifiable). |

@@ -30,6 +30,20 @@ def cmd_generate(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_plan(args: argparse.Namespace) -> int:
+    from pathlib import Path
+
+    from planner import plan
+    cfg = load_config(args.scale)
+    res = plan.run(cfg, Path(args.data) if args.data else None)
+    s = plan.summary(res)
+    print(f"[planner] planned scale={cfg.scale} in {s['seconds']} s")
+    for k, v in s.items():
+        if k != "seconds":
+            print(f"  {k:<26} {v}")
+    return 0
+
+
 def cmd_docs(args: argparse.Namespace) -> int:
     from planner.docs_gen import write_all
     for path in write_all():
@@ -40,7 +54,7 @@ def cmd_docs(args: argparse.Namespace) -> int:
 COMMANDS: dict[str, tuple[str, Callable[[argparse.Namespace], int], bool, bool]] = {
     # name: (help, handler, takes --scale, takes --seed)
     "generate": ("Generate baseline data, inject labelled cases, write ground truth", cmd_generate, True, True),
-    "plan": ("Quality gate, PAB, planned orders, shortages, mitigations, decisions", _not_yet("plan", 3), True, False),
+    "plan": ("Quality gate, PAB, planned orders, shortages, mitigations, decisions", cmd_plan, True, False),
     "validate": ("Run all checks -> reports/validation_summary.{md,json}", _not_yet("validate", 6), True, False),
     "evaluate": ("Metrics and detection precision/recall vs ground truth", _not_yet("evaluate", 5), True, False),
     "export": ("CSV/JSON/SQL exports, manifest and checksums", _not_yet("export", 6), True, False),
@@ -62,6 +76,8 @@ def build_parser() -> argparse.ArgumentParser:
             sp.add_argument("--seed", type=int, default=DEFAULT_SEED)
         if name == "generate":
             sp.add_argument("--out", default=None, help="output directory (default data/<scale>)")
+        if name == "plan":
+            sp.add_argument("--data", default=None, help="data directory (default data/<scale>)")
         sp.set_defaults(func=handler)
     return p
 

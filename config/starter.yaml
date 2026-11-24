@@ -58,7 +58,7 @@ purchase_orders:
 
 inventory:
   opening_cover_noise: 0.35             # +/- relative noise on (lead time + SS weeks) cover
-  opening_cover_bias: 1.0               # multiplier on target cover (calibration knob)
+  opening_cover_bias: 2.0               # multiplier on target cover; calibrated in Phase 3 to 5-12% short
   history_weeks: 17                     # 2025-09-01 .. as-of
   adjustment_rate: 0.05
 
@@ -68,7 +68,8 @@ production:
 policy:
   approval_cost_threshold_inr: 200000
   approval_var_share: 0.25
-  planned_order_cover_weeks: 4
+  planned_order_cover_weeks: 4          # planned order covers the SS gap + 4 weeks of demand
+  prebuild_weeks: 8                     # MRP may pull a receipt up to 8 weeks earlier into spare supplier capacity
   transfer_lead_weeks_same_region: 1
   transfer_lead_weeks_cross_region: 2
 

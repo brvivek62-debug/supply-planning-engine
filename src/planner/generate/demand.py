@@ -10,6 +10,34 @@ from planner.schema import CATEGORIES
 from .common import Ctx, round_half_up
 
 
+def seasonality(ctx: Ctx) -> dict:
+    """Category seasonality (sinusoid with category-specific phase and amplitude), drawn once from its own
+    named stream in a fixed order and cached, so supply sizing and demand share the same latent profile."""
+    if "seasonality" not in ctx.aux:
+        srng = ctx.rngs("seasonality")
+        amp_lo, amp_hi = ctx.cfg["demand"]["seasonality_amplitude"]
+        phase = {c: srng.uniform(0, 2 * np.pi) for c in CATEGORIES}
+        amp = {c: srng.uniform(amp_lo, amp_hi) for c in CATEGORIES}
+        ctx.aux["seasonality"] = {"phase": phase, "amp": amp}
+    return ctx.aux["seasonality"]
+
+
+def season_factor(ctx: Ctx, categories) -> np.ndarray:
+    """(len(categories), W) seasonal multiplier per category."""
+    s = seasonality(ctx)
+    wk = np.arange(1, ctx.cfg.weeks + 1)
+    ph = np.array([s["phase"][c] for c in categories])
+    am = np.array([s["amp"][c] for c in categories])
+    return 1.0 + am[:, None] * np.sin(2 * np.pi * (wk[None, :] - 1) / 52.0 + ph[:, None])
+
+
+def promo_uplift(ctx: Ctx) -> float:
+    """Expected demand multiplier from promotions: 1 + promo_rate x (mean promo multiplier - 1)."""
+    dc = ctx.cfg["demand"]
+    lo, hi = dc["promo_multiplier"]
+    return 1.0 + float(dc["promo_rate"]) * ((lo + hi) / 2.0 - 1.0)
+
+
 def gen_forecast_demand(ctx: Ctx) -> pd.DataFrame:
     rng = ctx.rngs("forecast_demand")
     dc = ctx.cfg["demand"]
@@ -18,19 +46,12 @@ def gen_forecast_demand(ctx: Ctx) -> pd.DataFrame:
     sl = ctx["sku_location"]
     fin = sl[sl["sku_id"].map(sku["sku_type"]) == "FINISHED"][["sku_id", "location_id"]].reset_index(drop=True)
     n_pairs = len(fin)
-    # Category seasonality: sinusoid with category-specific phase and amplitude (drawn in a fixed order).
-    srng = ctx.rngs("seasonality")
-    amp_lo, amp_hi = dc["seasonality_amplitude"]
-    phase = {c: srng.uniform(0, 2 * np.pi) for c in CATEGORIES}
-    amp = {c: srng.uniform(amp_lo, amp_hi) for c in CATEGORIES}
-    ctx.aux["seasonality"] = {"phase": phase, "amp": amp}
+    seasonality(ctx)
 
     rate = ctx.aux["exp_rate"].reindex(pd.MultiIndex.from_frame(fin)).to_numpy()
     cat = fin["sku_id"].map(sku["category"]).to_numpy()
     wk = np.arange(1, W + 1)
-    ph = np.array([phase[c] for c in cat])
-    am = np.array([amp[c] for c in cat])
-    season = 1.0 + am[:, None] * np.sin(2 * np.pi * (wk[None, :] - 1) / 52.0 + ph[:, None])   # (pairs, W)
+    season = season_factor(ctx, cat)   # (pairs, W)
 
     rate2 = np.repeat(rate[:, None], W, axis=1)
     promo = rng.random((n_pairs, W)) < dc["promo_rate"]

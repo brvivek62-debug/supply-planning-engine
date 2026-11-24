@@ -352,7 +352,7 @@ CREATE TABLE shortage (
     shortage_qty_ea INTEGER NOT NULL CHECK (shortage_qty_ea >= 0),
     below_ss_qty_ea INTEGER NOT NULL CHECK (below_ss_qty_ea >= 0),
     value_at_risk_inr REAL NOT NULL CHECK (value_at_risk_inr >= 0),
-    primary_cause TEXT NOT NULL CHECK (primary_cause IN ('DEMAND_SPIKE', 'PO_DELAYED', 'SUPPLIER_CAPACITY', 'LEAD_TIME_FENCE', 'LOW_OPENING_STOCK', 'COMPONENT_SHORTAGE')),
+    primary_cause TEXT NOT NULL CHECK (primary_cause IN ('DEMAND_SPIKE', 'PO_DELAYED', 'SUPPLIER_CAPACITY', 'LEAD_TIME_FENCE', 'LOW_OPENING_STOCK', 'COMPONENT_SHORTAGE', 'PRODUCTION_CAPACITY')),
     explanation TEXT NOT NULL,
     priority_score REAL NOT NULL CHECK (priority_score >= 0),
     priority_rank INTEGER NOT NULL CHECK (priority_rank >= 1),
@@ -367,7 +367,7 @@ CREATE TABLE shortage (
 -- Bridge (Shortage N:M evidence): each derived cause with its evidence record.
 CREATE TABLE shortage_cause (
     shortage_id TEXT NOT NULL,
-    cause_code TEXT NOT NULL CHECK (cause_code IN ('DEMAND_SPIKE', 'PO_DELAYED', 'SUPPLIER_CAPACITY', 'LEAD_TIME_FENCE', 'LOW_OPENING_STOCK', 'COMPONENT_SHORTAGE')),
+    cause_code TEXT NOT NULL CHECK (cause_code IN ('DEMAND_SPIKE', 'PO_DELAYED', 'SUPPLIER_CAPACITY', 'LEAD_TIME_FENCE', 'LOW_OPENING_STOCK', 'COMPONENT_SHORTAGE', 'PRODUCTION_CAPACITY')),
     evidence_type TEXT NOT NULL CHECK (evidence_type IN ('forecast_demand', 'purchase_order', 'planned_order', 'supplier_capacity', 'lead_time', 'inventory', 'production_plan', 'bom')),
     evidence_id TEXT NOT NULL,
     contribution_qty_ea INTEGER NOT NULL CHECK (contribution_qty_ea >= 0),
