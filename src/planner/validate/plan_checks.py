@@ -255,7 +255,8 @@ def check_mitigation_options(t, cfg) -> CheckResult:
                & ((t_ != "ALTERNATE_SUPPLIER") | ~_blank(mo["ref_supplier_id"]))
                & ((t_ != "TRANSFER") | (~_blank(mo["ref_from_location_id"])
                                          & (mo["ref_from_location_id"] != s.map(sh["location_id"]))))
-               & ((t_ != "SUBSTITUTE_SKU") | (~_blank(mo["ref_substitute_id"]) & ~_blank(mo["ref_substitute_sku_id"])))
+               & ((t_ != "SUBSTITUTE_SKU") | (~_blank(mo["ref_substitute_sku_id"])
+                                               & (~_blank(mo["ref_substitute_id"]) | (mo["source"] == "MANUAL"))))
                & ((t_ != "INCREASE_PRODUCTION") | ~_blank(mo["ref_plant_location_id"])))
     bad = ((mo["mitigation_id"] != "MIT-" + s + "-" + mo["option_seq"].map(lambda k: f"{int(k):02d}"))
            | (mo["qty_covered_ea"] > below) | ((mo["coverage_pct"] - mo["qty_covered_ea"] / below).abs() > 1e-4)
@@ -299,7 +300,7 @@ def check_mitigation_policy(t) -> CheckResult:
         day = cal.week_start_of(s["start_week"]).isoformat()
         ok = True
         if r.option_type == "SUBSTITUTE_SKU":
-            x = sub.loc[r.ref_substitute_id] if r.ref_substitute_id in sub.index else None
+            x = sub.loc[r.ref_substitute_id] if isinstance(r.ref_substitute_id, str) and r.ref_substitute_id in sub.index else None
             usable = (x is not None and x["approval_status"] == "APPROVED" and x["sku_id"] == s["sku_id"]
                       and _eff(x["effective_from"], x["effective_to"], day)
                       and x["substitute_sku_id"] == r.ref_substitute_sku_id)

@@ -1,9 +1,12 @@
-"""Baseline data generation in dependency order (MASTER_PROMPT Section 9, steps 1-7)."""
+"""Data generation in dependency order (MASTER_PROMPT Section 9): baseline steps 1-7, then step 8 (inject
+boundary cases, anomalies and MANUAL proposals, write ground truth) via ``planner.inject``."""
 from __future__ import annotations
 
 import json
 import time
 from pathlib import Path
+
+import pandas as pd
 
 from planner import __version__, tableio
 from planner.config import Config
@@ -23,7 +26,7 @@ INPUT_TABLES = (
     "sku_location", "supplier_sku", "sku_substitute", "bom",
     "lead_time", "supplier_capacity", "production_capacity",
     "forecast_demand", "purchase_order", "purchase_order_event",
-    "inventory_txn", "inventory", "production_plan",
+    "inventory_txn", "inventory", "production_plan", "mitigation_proposal",
 )
 
 
@@ -54,26 +57,56 @@ def build(cfg: Config) -> Ctx:
     t["inventory_txn"], t["inventory"] = gen_inventory(ctx)
     # 7. FIRM production
     t["production_plan"] = gen_production_plan(ctx)
+    # no MANUAL proposals in the baseline (step 8 adds them)
+    t["mitigation_proposal"] = pd.DataFrame(columns=["mitigation_id", "shortage_id", "option_seq", "option_type",
+                                                     "ref_substitute_id", "ref_substitute_sku_id", "qty_proposed_ea",
+                                                     "created_by_role"])
     return ctx
 
 
-def write(ctx: Ctx, out: Path) -> dict[str, int]:
-    fmt = tableio.fmt_of(ctx.cfg)
+def write(tables: dict[str, pd.DataFrame], cfg: Config, out: Path) -> dict[str, int]:
+    fmt = tableio.fmt_of(cfg)
     counts = {}
     for name in INPUT_TABLES:
-        tableio.write_table(ctx.tables[name], name, out, fmt)
-        counts[name] = len(ctx.tables[name])
+        tableio.write_table(tables[name], name, out, fmt)
+        counts[name] = len(tables[name])
     return counts
 
 
-def run(cfg: Config, out: Path) -> dict[str, int]:
+def inject_cases(ctx: Ctx, out: Path) -> tuple[dict[str, int], int]:
+    """Step 8: boundary cases and anomalies on the written baseline, then MANUAL proposals for real shortages
+    found by a planning pass. Returns (row counts, ground-truth rows)."""
+    from planner import inject, plan
+    from planner.inject import anomalies, boundaries
+    from planner.inject.common import Book
+    cfg, fmt = ctx.cfg, tableio.fmt_of(ctx.cfg)
+    t = tableio.read_all(out, fmt, list(INPUT_TABLES))
+    book = Book()
+    base = plan.plan({k: v.copy() for k, v in t.items()}, cfg)
+    gt = boundaries.inject(t, cfg, ctx.rngs, book, base)
+    gt += anomalies.inject_inputs(t, cfg, ctx.rngs, book, base)
+    write(t, cfg, out)
+    t = tableio.read_all(out, fmt, list(INPUT_TABLES))
+    res = plan.plan({k: v.copy() for k, v in t.items()}, cfg)
+    props, rows = anomalies.inject_proposals(t, res, cfg, ctx.rngs)
+    gt += rows
+    t["mitigation_proposal"] = props
+    counts = write(t, cfg, out)
+    inject.write_ground_truth(inject.to_frame(gt), inject.ground_truth_dir(cfg.scale, out))
+    return counts, len(gt)
+
+
+def run(cfg: Config, out: Path, inject: bool = True) -> dict[str, int]:
     t0 = time.perf_counter()
     ctx = build(cfg)
-    counts = write(ctx, out)
+    counts = write(ctx.tables, cfg, out)
+    n_gt = 0
+    if inject:
+        counts, n_gt = inject_cases(ctx, out)
     info = {"command": f"python -m planner generate --scale {cfg.scale} --seed {cfg.seed}",
             "scale": cfg.scale, "seed": cfg.seed, "package_version": __version__,
-            "as_of_date": cfg.as_of_date.isoformat(), "row_counts": counts,
-            "generate_seconds": round(time.perf_counter() - t0, 2)}
+            "as_of_date": cfg.as_of_date.isoformat(), "row_counts": counts, "injected": inject,
+            "ground_truth_rows": n_gt, "generate_seconds": round(time.perf_counter() - t0, 2)}
     with open(Path(out) / "run_info.json", "w", encoding="utf-8", newline="\n") as fh:
         json.dump(info, fh, indent=2, sort_keys=True)
         fh.write("\n")

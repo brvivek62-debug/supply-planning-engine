@@ -164,8 +164,8 @@ def _gate(t, cfg):
     return quality_gate.run(t, cfg.weeks)
 
 
-def test_quality_gate_clean_baseline(generated, test_cfg):
-    _, t = generated
+def test_quality_gate_clean_baseline(baseline, test_cfg):
+    _, t = baseline
     assert len(_gate(t, test_cfg).exceptions) == 0
 
 
@@ -177,8 +177,8 @@ def _open_po(t, statuses=quality_gate.OPEN_STATUS, nth=0, **filt):
     return po[m].sort_values("po_id").iloc[nth]
 
 
-def test_gate_uom_mismatch_corrected(generated, test_cfg):
-    _, t0 = generated
+def test_gate_uom_mismatch_corrected(baseline, test_cfg):
+    _, t0 = baseline
     t = _copy(t0)
     p = _open_po(t, order_uom="CASE")
     i = t["purchase_order"].index[t["purchase_order"]["po_id"] == p["po_id"]][0]
@@ -190,8 +190,8 @@ def test_gate_uom_mismatch_corrected(generated, test_cfg):
     assert g.po.set_index("po_id").at[p["po_id"], "qty_base_ea"] == p["qty_base_ea"]
 
 
-def test_gate_lead_time_ignored_corrected(generated, test_cfg):
-    _, t0 = generated
+def test_gate_lead_time_ignored_corrected(baseline, test_cfg):
+    _, t0 = baseline
     t = _copy(t0)
     p = _open_po(t)
     order_week = cal.offset_label(cal.week_offset(pd.Timestamp(p["order_date"]).date()))
@@ -206,8 +206,8 @@ def test_gate_lead_time_ignored_corrected(generated, test_cfg):
     assert fixed["revised_receipt_week"] == p["revised_receipt_week"]
 
 
-def test_gate_duplicate_inbound_excluded(generated, test_cfg):
-    _, t0 = generated
+def test_gate_duplicate_inbound_excluded(baseline, test_cfg):
+    _, t0 = baseline
     t = _copy(t0)
     inv = t["inventory"]
     row = inv[inv["inventory_status"] == "IN_TRANSIT"].iloc[0].copy()
@@ -223,8 +223,8 @@ def test_gate_duplicate_inbound_excluded(generated, test_cfg):
     assert g.firm_receipts["qty_ea"].sum() == base
 
 
-def test_gate_capacity_exceeded_capped(generated, test_cfg):
-    _, t0 = generated
+def test_gate_capacity_exceeded_capped(baseline, test_cfg):
+    _, t0 = baseline
     t = _copy(t0)
     p = _open_po(t)
     w = p["revised_receipt_week"]
@@ -246,9 +246,9 @@ def test_gate_capacity_exceeded_capped(generated, test_cfg):
     assert (g.supplier_remaining.to_numpy() >= 0).all()
 
 
-def test_gate_boundaries_raise_nothing(generated, test_cfg):
+def test_gate_boundaries_raise_nothing(baseline, test_cfg):
     """Load exactly = capacity, PO qty exactly = MOQ, receipt exactly = order week + lead time: no exception."""
-    _, t0 = generated
+    _, t0 = baseline
     t = _copy(t0)
     po = t["purchase_order"]
     unshipped = ("CREATED", "CONFIRMED")        # no IN_TRANSIT mirror row to keep in sync

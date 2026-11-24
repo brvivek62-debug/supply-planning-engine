@@ -21,7 +21,7 @@ from . import balance, mitigations, quality_gate, replenish, shortages
 INPUT_TABLES = (
     "location", "sku", "supplier", "sku_location", "supplier_sku", "sku_substitute", "bom",
     "lead_time", "supplier_capacity", "production_capacity", "forecast_demand", "purchase_order",
-    "purchase_order_event", "inventory_txn", "inventory", "production_plan",
+    "purchase_order_event", "inventory_txn", "inventory", "production_plan", "mitigation_proposal",
 )
 OUTPUT_TABLES = ("exception", "planned_order", "projected_balance", "production_plan",
                  "shortage", "shortage_cause", "mitigation_option", "mitigation_ledger", "shortage_event")
@@ -73,7 +73,7 @@ def run(cfg: Config, base: Path | None = None) -> PlanRun:
     fmt = tableio.fmt_of(cfg)
     if not tableio.exists("sku", base, fmt):
         raise FileNotFoundError(f"no generated data in {base}; run `python -m planner generate --scale {cfg.scale}` first")
-    tables = tableio.read_all(base, fmt, list(INPUT_TABLES))
+    tables = tableio.read_all(base, fmt, [n for n in INPUT_TABLES if tableio.exists(n, base, fmt)])
     res = plan(tables, cfg)
     for name in OUTPUT_TABLES:
         tableio.write_table(res.outputs[name], name, base, fmt)

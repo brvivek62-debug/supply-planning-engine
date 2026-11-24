@@ -66,6 +66,9 @@ erDiagram
     SKU_LOCATION |o--o{ MITIGATION_LEDGER : "moves stock of"
     SHORTAGE ||--o{ SHORTAGE_EVENT : "has history"
     MITIGATION_OPTION |o--o{ SHORTAGE_EVENT : "selected in"
+    SHORTAGE ||--o{ MITIGATION_PROPOSAL : "proposed for"
+    SKU_SUBSTITUTE |o--o{ MITIGATION_PROPOSAL : "proposes"
+    SKU ||--o{ MITIGATION_PROPOSAL : "proposes substitute"
 
     LOCATION {
         string location_id PK
@@ -346,6 +349,16 @@ erDiagram
         string reason_code
         string mitigation_id FK
     }
+    MITIGATION_PROPOSAL {
+        string mitigation_id PK
+        string shortage_id FK, UK
+        int option_seq UK
+        string option_type
+        string ref_substitute_id FK
+        string ref_substitute_sku_id FK
+        int qty_proposed_ea
+        string created_by_role
+    }
     GROUND_TRUTH {
         string gt_id PK
         string case_class
@@ -426,6 +439,9 @@ Parent : child. `optional` = the FK column may be empty (child need not referenc
 | `sku_location` | `mitigation_ledger` | `sku_id, location_id` | 1:N | yes |
 | `shortage` | `shortage_event` | `shortage_id` | 1:N | no |
 | `mitigation_option` | `shortage_event` | `mitigation_id` | 1:N | yes |
+| `shortage` | `mitigation_proposal` | `shortage_id` | 1:N | no |
+| `sku_substitute` | `mitigation_proposal` | `ref_substitute_id` | 1:N | yes |
+| `sku` | `mitigation_proposal` | `ref_substitute_sku_id` | 1:N | no |
 
 ### Many-to-many relationships (bridge tables)
 

@@ -36,11 +36,13 @@ def _wk(i: int) -> str:
     return cal.week_label(i + 1)
 
 
-def substitute_ok(ctx, sh, sub_id: str) -> str | None:
+def substitute_ok(ctx, sh, sub_id, sub_sku: str | None = None) -> str | None:
     """None if the substitute may be used for this shortage, else the reason."""
-    r = ctx.sub_rec.get(sub_id)
+    r = ctx.sub_rec.get(sub_id) if isinstance(sub_id, str) else None
     if r is None:
-        return f"substitute {sub_id} does not exist"
+        return f"UNAPPROVED_SUBSTITUTE: no sku_substitute rule for {sh.sku} -> {sub_sku}"
+    if r["sku_id"] != sh.sku:
+        return f"UNAPPROVED_SUBSTITUTE: {sub_id} is a rule for {r['sku_id']}, not {sh.sku}"
     if r["approval_status"] != "APPROVED":
         return f"UNAPPROVED_SUBSTITUTE: {sub_id} approval_status {r['approval_status']}"
     if not _effective_on(r["effective_from"], r["effective_to"], ctx.week_start[sh.s]):
@@ -68,7 +70,7 @@ def _policy_reason(ctx, sh, o: dict) -> str | None:
         if why:
             return "; ".join(why)
     elif t == "SUBSTITUTE_SKU":
-        return substitute_ok(ctx, sh, o["ref_substitute_id"])
+        return substitute_ok(ctx, sh, o["ref_substitute_id"], o["ref_substitute_sku_id"])
     return None
 
 
@@ -109,12 +111,20 @@ def recommend(ctx, sh, opts: list[dict]) -> int:
 
 def manual_option(ctx, L, sh, p) -> dict | None:
     """A MANUAL planner proposal (mitigation_proposal row) turned into an option. Only SUBSTITUTE_SKU proposals
-    exist; one that may be used is sized against the ledger, an unusable one is costed as proposed."""
-    from .mitigations import substitute_option
-    if p.option_type != "SUBSTITUTE_SKU" or p.ref_substitute_id not in ctx.sub_rec:
+    exist. One that may be used is sized against the ledger; an unusable one (unapproved / not effective rule, or
+    an ad-hoc substitute with no rule) is costed as proposed and never books the ledger."""
+    from .mitigations import _opt, _step, evaluate, substitute_option
+    if p.option_type != "SUBSTITUTE_SKU":
         return None
-    usable = substitute_ok(ctx, sh, p.ref_substitute_id) is None
-    o = substitute_option(ctx, L if usable else None, sh, p.ref_substitute_id, int(p.qty_proposed_ea))
+    sub_id = p.ref_substitute_id if isinstance(p.ref_substitute_id, str) else None
+    usable = substitute_ok(ctx, sh, sub_id, p.ref_substitute_sku_id) is None
+    if sub_id is not None and sub_id in ctx.sub_rec and ctx.sub_rec[sub_id]["sku_id"] == sh.sku:
+        o = substitute_option(ctx, L if usable else None, sh, sub_id, int(p.qty_proposed_ea))
+    else:                                   # ad-hoc substitute: 1:1, cost = price difference
+        q = int(p.qty_proposed_ea)
+        cost = q * abs(ctx.price.get(p.ref_substitute_sku_id, ctx.price[sh.sku]) - ctx.price[sh.sku])
+        o = _opt(sh, "SUBSTITUTE_SKU", sh.s, q, cost, _step(sh, sh.s, ctx.W, q), [], ctx,
+                 ref_substitute_id=sub_id, ref_substitute_sku_id=p.ref_substitute_sku_id)
     if o is None:
         return None
     o.update({"source": "MANUAL", "created_by_role": p.created_by_role, "option_seq": int(p.option_seq)})
@@ -155,7 +165,8 @@ def exceptions(opts: pd.DataFrame) -> pd.DataFrame:
     bad = opts[(opts["option_type"] == "SUBSTITUTE_SKU")
                & opts["policy_violation_reason"].fillna("").str.startswith("UNAPPROVED_SUBSTITUTE")]
     rows = [{"issue_type": "UNAPPROVED_SUBSTITUTE", "entity": "mitigation_option", "record_id": r.mitigation_id,
-             "related_record_ids": f"{r.ref_substitute_id};{r.shortage_id}", "detection_rule": UNAPPROVED_RULE,
+             "related_record_ids": ";".join(x for x in (r.ref_substitute_id, r.ref_substitute_sku_id, r.shortage_id)
+                                            if isinstance(x, str)), "detection_rule": UNAPPROVED_RULE,
              "action_taken": "FLAGGED", "severity": "MEDIUM",
              "detail": f"{r.source} option marked VIOLATION and not recommended: {r.policy_violation_reason}"}
             for r in bad.sort_values("mitigation_id").itertuples(index=False)]

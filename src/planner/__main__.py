@@ -44,6 +44,22 @@ def cmd_plan(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_evaluate(args: argparse.Namespace) -> int:
+    from pathlib import Path
+
+    from planner import evaluate
+    cfg = load_config(args.scale)
+    r = evaluate.run(cfg, Path(args.data) if args.data else None)
+    m = r["planning"]
+    print(f"[planner] evaluated scale={cfg.scale}: {m['shortages']} shortages, fill rate "
+          f"{m['fill_rate_before']:.4%} -> {m['fill_rate_after']:.4%}, boundary false positives "
+          f"{r['boundary_false_positives']}")
+    for d in r["detection"]:
+        print(f"  {d['issue_type']:<28} injected {d['injected']:>3}  detected {d['detected']:>3}  "
+              f"precision {d['precision']:.3f}  recall {d['recall']:.3f}  f1 {d['f1']:.3f}")
+    return 0
+
+
 def cmd_docs(args: argparse.Namespace) -> int:
     from planner.docs_gen import write_all
     for path in write_all():
@@ -56,7 +72,7 @@ COMMANDS: dict[str, tuple[str, Callable[[argparse.Namespace], int], bool, bool]]
     "generate": ("Generate baseline data, inject labelled cases, write ground truth", cmd_generate, True, True),
     "plan": ("Quality gate, PAB, planned orders, shortages, mitigations, decisions", cmd_plan, True, False),
     "validate": ("Run all checks -> reports/validation_summary.{md,json}", _not_yet("validate", 6), True, False),
-    "evaluate": ("Metrics and detection precision/recall vs ground truth", _not_yet("evaluate", 5), True, False),
+    "evaluate": ("Metrics and detection precision/recall vs ground truth", cmd_evaluate, True, False),
     "export": ("CSV/JSON/SQL exports, manifest and checksums", _not_yet("export", 6), True, False),
     "repro-check": ("Run twice into temp dirs and compare row counts + SHA-256", _not_yet("repro-check", 6), True, True),
     "docs": ("Generate data dictionary, sql/schema.sql and ERD from schema.py", cmd_docs, False, False),
@@ -76,7 +92,7 @@ def build_parser() -> argparse.ArgumentParser:
             sp.add_argument("--seed", type=int, default=DEFAULT_SEED)
         if name == "generate":
             sp.add_argument("--out", default=None, help="output directory (default data/<scale>)")
-        if name == "plan":
+        if name in ("plan", "evaluate"):
             sp.add_argument("--data", default=None, help="data directory (default data/<scale>)")
         sp.set_defaults(func=handler)
     return p

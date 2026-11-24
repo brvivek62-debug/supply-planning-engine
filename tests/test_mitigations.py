@@ -97,16 +97,20 @@ def test_ledger_check_catches_overbooking(mit_planned, test_cfg):
     assert plan_checks.check_mitigation_ledger(t, test_cfg)[0].failures > 0
 
 
-def test_manual_unapproved_substitute_flagged(generated, planned, test_cfg):
+def test_manual_unapproved_substitute_flagged(baseline, planned, test_cfg):
     """A MANUAL planner proposal with a PENDING/REJECTED substitute is a VIOLATION, never recommended, and raises
     an UNAPPROVED_SUBSTITUTE exception (Phase 5 injects these from ground-truth-labelled proposals)."""
-    _, t_in = generated
-    _, t_out = planned
+    _, t_in = baseline
+    shs = plan.plan(_copy(t_in), test_cfg).outputs["shortage"].sort_values("shortage_id")
     sub = t_in["sku_substitute"]
-    bad_sub = sub[sub["approval_status"] != "APPROVED"].iloc[0]
-    sh = t_out["shortage"].iloc[0]
+    bad = sub[sub["approval_status"] != "APPROVED"]
+    hit = shs[shs["sku_id"].isin(bad["sku_id"])]
+    sh = (hit if len(hit) else shs).iloc[0]
+    rules = bad[bad["sku_id"] == sh["sku_id"]]
+    bad_sub = (rules if len(rules) else bad).iloc[0]
     prop = pd.DataFrame([{"mitigation_id": f"MIT-{sh['shortage_id']}-91", "shortage_id": sh["shortage_id"],
                           "option_seq": 91, "option_type": "SUBSTITUTE_SKU", "ref_substitute_id": bad_sub["substitute_id"],
+                          "ref_substitute_sku_id": bad_sub["substitute_sku_id"],
                           "qty_proposed_ea": int(sh["below_ss_qty_ea"]), "created_by_role": "PLANNER"}])
     tables = _copy(t_in)
     tables["mitigation_proposal"] = prop

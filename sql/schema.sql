@@ -3,6 +3,7 @@
 PRAGMA foreign_keys = ON;
 
 DROP TABLE IF EXISTS ground_truth;
+DROP TABLE IF EXISTS mitigation_proposal;
 DROP TABLE IF EXISTS shortage_event;
 DROP TABLE IF EXISTS mitigation_ledger;
 DROP TABLE IF EXISTS mitigation_option;
@@ -448,6 +449,23 @@ CREATE TABLE shortage_event (
     UNIQUE (shortage_id, seq),
     FOREIGN KEY (shortage_id) REFERENCES shortage (shortage_id),
     FOREIGN KEY (mitigation_id) REFERENCES mitigation_option (mitigation_id)
+);
+
+-- MANUAL mitigation proposals entered by planners for real shortages, checked by decide.
+CREATE TABLE mitigation_proposal (
+    mitigation_id TEXT NOT NULL,
+    shortage_id TEXT NOT NULL,
+    option_seq INTEGER NOT NULL CHECK (option_seq >= 90 AND option_seq <= 99),
+    option_type TEXT NOT NULL CHECK (option_type IN ('SUBSTITUTE_SKU')),
+    ref_substitute_id TEXT,
+    ref_substitute_sku_id TEXT NOT NULL,
+    qty_proposed_ea INTEGER NOT NULL CHECK (qty_proposed_ea > 0),
+    created_by_role TEXT NOT NULL CHECK (created_by_role IN ('PLANNER')),
+    PRIMARY KEY (mitigation_id),
+    UNIQUE (shortage_id, option_seq),
+    FOREIGN KEY (shortage_id) REFERENCES shortage (shortage_id),
+    FOREIGN KEY (ref_substitute_id) REFERENCES sku_substitute (substitute_id),
+    FOREIGN KEY (ref_substitute_sku_id) REFERENCES sku (sku_id)
 );
 
 -- Labels for injected anomalies and boundary cases. Never an input to the planner.

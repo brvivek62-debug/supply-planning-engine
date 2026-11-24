@@ -5,7 +5,9 @@ Order of rules matters and is fixed:
 1. UOM_MISMATCH        -> CORRECTED  (qty_base_ea = order_qty x supplier_sku conversion)
 2. LEAD_TIME_IGNORED   -> CORRECTED  (receipt week = order week + lane lead time [+ delay])
 3. DUPLICATE_INBOUND   -> EXCLUDED   (extra / wrong-qty IN_TRANSIT rows; receipt counted once from the PO)
-4. SUPPLIER_CAPACITY_EXCEEDED -> FLAGGED / CAPPED (overflow pushed to the next week with spare capacity)
+4. SUPPLIER_CAPACITY_EXCEEDED -> CAPPED (POs allocated in po_id order; the PO that overflows gets the exception,
+   the other POs of the supplier-week are listed in related_record_ids; overflow pushed to the next week with
+   spare capacity)
 
 UNAPPROVED_SUBSTITUTE is checked later on mitigation options (decide, Phase 4).
 """
@@ -128,10 +130,7 @@ def _capacity(po: pd.DataFrame, cap: pd.DataFrame, weeks: int, out: list):
                     continue
                 left = q - fit
                 if left == 0:
-                    out.append(_exc("SUPPLIER_CAPACITY_EXCEEDED", "purchase_order", r.po_id, cid.iat[s, wi], "FLAGGED",
-                                    "MEDIUM", f"{sup} load {capacity - int(rem[s, wi])} EA > capacity {capacity} EA in "
-                                    f"{cal.week_label(w)}; this PO fits within capacity"))
-                    continue
+                    continue                    # fits: listed as related on the overflowing PO's exception
                 moved = []
                 for w2 in range(wi + 1, weeks):
                     if left == 0:
@@ -145,9 +144,11 @@ def _capacity(po: pd.DataFrame, cap: pd.DataFrame, weeks: int, out: list):
                         moved.append(f"{take} EA to {cal.week_label(w2 + 1)}")
                 if left > 0:
                     moved.append(f"{left} EA beyond the horizon")
-                out.append(_exc("SUPPLIER_CAPACITY_EXCEEDED", "purchase_order", r.po_id, cid.iat[s, wi], "CAPPED",
+                others = [p for p in gw["po_id"] if p != r.po_id]
+                out.append(_exc("SUPPLIER_CAPACITY_EXCEEDED", "purchase_order", r.po_id,
+                                ";".join([cid.iat[s, wi]] + others), "CAPPED",
                                 "HIGH", f"{sup} load {capacity - int(rem[s, wi])} EA > capacity {capacity} EA in "
-                                f"{cal.week_label(w)}; pushed " + ", ".join(moved)))
+                                f"{cal.week_label(w)}; {fit} EA fit, pushed " + ", ".join(moved)))
             if over:
                 rem[s, wi] = 0
     rec = pd.DataFrame(receipts, columns=["po_id", "supplier_id", "sku_id", "location_id", "w", "qty_ea",

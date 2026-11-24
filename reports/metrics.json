@@ -1,0 +1,151 @@
+{
+  "boundary": [
+    {
+      "cases": 5,
+      "examples": "",
+      "false_positives": 0,
+      "issue_type": "PO_QTY_EQUALS_MOQ"
+    },
+    {
+      "cases": 5,
+      "examples": "",
+      "false_positives": 0,
+      "issue_type": "RECEIPT_EQUALS_LEAD_TIME"
+    },
+    {
+      "cases": 5,
+      "examples": "",
+      "false_positives": 0,
+      "issue_type": "SUPPLIER_LOAD_EQUALS_CAPACITY"
+    }
+  ],
+  "boundary_false_positives": 0,
+  "detection": [
+    {
+      "action_as_expected": 10,
+      "detected": 10,
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "injected": 10,
+      "issue_type": "DUPLICATE_INBOUND",
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 10
+    },
+    {
+      "action_as_expected": 10,
+      "detected": 10,
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "injected": 10,
+      "issue_type": "UNAPPROVED_SUBSTITUTE",
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 10
+    },
+    {
+      "action_as_expected": 10,
+      "detected": 10,
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "injected": 10,
+      "issue_type": "SUPPLIER_CAPACITY_EXCEEDED",
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 10
+    },
+    {
+      "action_as_expected": 10,
+      "detected": 10,
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "injected": 10,
+      "issue_type": "LEAD_TIME_IGNORED",
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 10
+    },
+    {
+      "action_as_expected": 10,
+      "detected": 10,
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "injected": 10,
+      "issue_type": "UOM_MISMATCH",
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 10
+    }
+  ],
+  "ground_truth_rows": 65,
+  "outcomes_checked": 20,
+  "outcomes_ok": 20,
+  "planning": {
+    "cost_per_covered_ea_inr": 37.12,
+    "covered_ea": 6359,
+    "escalated": 25,
+    "fill_rate_after": 0.999926,
+    "fill_rate_before": 0.999839,
+    "mitigation_cost_inr": 244068.55,
+    "mitigation_cost_non_backorder_inr": 236068.65,
+    "mitigation_options": 973,
+    "option_violations": 39,
+    "options_by_type": {
+      "ALTERNATE_SUPPLIER": 70,
+      "BACKORDER": 233,
+      "EXPEDITE_PO": 12,
+      "INCREASE_PRODUCTION": 44,
+      "SUBSTITUTE_SKU": 28,
+      "TRANSFER": 586
+    },
+    "pct_compliant_non_backorder": 79.83,
+    "pct_fully_covered": 59.66,
+    "pct_sku_locations_short": 11.71,
+    "recommended_by_type": {
+      "ALTERNATE_SUPPLIER": 11,
+      "BACKORDER": 47,
+      "EXPEDITE_PO": 5,
+      "INCREASE_PRODUCTION": 42,
+      "SUBSTITUTE_SKU": 6,
+      "TRANSFER": 122
+    },
+    "recommended_violations": 0,
+    "shortages": 233,
+    "shortages_by_primary_cause": {
+      "DEMAND_SPIKE": 45,
+      "LEAD_TIME_FENCE": 47,
+      "LOW_OPENING_STOCK": 16,
+      "PO_DELAYED": 15,
+      "PRODUCTION_CAPACITY": 31,
+      "SUPPLIER_CAPACITY": 79
+    },
+    "shortages_by_type": {
+      "BELOW_SAFETY_STOCK": 167,
+      "STOCKOUT": 66
+    },
+    "shortages_with_cause": {
+      "COMPONENT_SHORTAGE": 3,
+      "DEMAND_SPIKE": 83,
+      "LEAD_TIME_FENCE": 116,
+      "LOW_OPENING_STOCK": 34,
+      "PO_DELAYED": 28,
+      "PRODUCTION_CAPACITY": 42,
+      "SUPPLIER_CAPACITY": 79
+    },
+    "sku_locations": 1777,
+    "sku_locations_short": 208,
+    "status_mix": {
+      "BACKORDER_ACCEPTED": 47,
+      "ESCALATED": 25,
+      "MITIGATION_SELECTED": 161
+    },
+    "total_demand_ea": 9376097
+  },
+  "scale": "starter",
+  "seed": 20261022
+}

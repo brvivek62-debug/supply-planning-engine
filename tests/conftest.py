@@ -10,8 +10,17 @@ def test_cfg():
 
 
 @pytest.fixture(scope="session")
+def baseline(tmp_path_factory, test_cfg):
+    """Clean baseline (no injected cases) at test scale, read back through the CSV round trip."""
+    out = tmp_path_factory.mktemp("gen_baseline")
+    generate.run(test_cfg, out, inject=False)
+    tables = tableio.read_all(out, tableio.fmt_of(test_cfg), list(generate.INPUT_TABLES))
+    return out, tables
+
+
+@pytest.fixture(scope="session")
 def generated(tmp_path_factory, test_cfg):
-    """Generate the test scale once, write it, and read it back through the CSV round trip."""
+    """Full generate (baseline + injected cases + ground truth) at test scale, read back from CSV."""
     out = tmp_path_factory.mktemp("gen_test")
     generate.run(test_cfg, out)
     tables = tableio.read_all(out, tableio.fmt_of(test_cfg), list(generate.INPUT_TABLES))

@@ -8,8 +8,8 @@
 | 2 | Generator | ✅ done (test + starter) |
 | 3 | Planning | ✅ done (test + starter) |
 | 4 | Mitigations | ✅ done (test + starter) |
-| 5 | Edge cases & ground truth | ⏳ next |
-| 6 | Validate, export, repro, full scale | — |
+| 5 | Edge cases & ground truth | ✅ done (test + starter) |
+| 6 | Validate, export, repro, full scale | ⏳ next |
 | 7 | README & polish | — |
 
 ## Phase 0 — done
@@ -47,11 +47,20 @@
 - Starter: 1,019 options for 245 shortages (TRANSFER 615, BACKORDER 245, ALTERNATE_SUPPLIER 68, INCREASE_PRODUCTION 58, SUBSTITUTE_SKU 21, EXPEDITE_PO 12; 29 VIOLATION alternatives). Recommended: TRANSFER 125, INCREASE_PRODUCTION 56, BACKORDER 42, ALTERNATE_SUPPLIER 10, SUBSTITUTE_SKU 7, EXPEDITE_PO 5. 82.9% get a COMPLIANT non-backorder recommendation, 63.7% fully covered; cost INR 246,101.92 (238,666.92 non-backorder); 177 SELECTED, 26 ESCALATED, 42 BACKORDER_ACCEPTED; fill rate 99.9833% -> 99.9931%.
 - Tests: 121 passing (adds tests/test_mitigations.py: checks pass, one recommendation per shortage, no recommended VIOLATION, ledger never negative, alternatives differ in cost/coverage, fill rate does not drop, mutation tests for recommended violation and ledger overbooking, MANUAL unapproved substitute flagged, draws keep SS).
 
+## Phase 5 — done (test + starter)
+- `generate` now ends with step 8 (`planner.inject`): boundary cases and anomalies on the baseline, a planning pass, MANUAL proposals (`mitigation_proposal`) for real shortages, and `ground_truth/<scale>/ground_truth.csv` (gt_id, case_class, issue_type, entity, record_id, related_record_ids, injection_rule, expected_detection_rule, expected_action, expected_outcome).
+- Modules: `inject/{__init__,common,boundaries,anomalies}.py`, `evaluate.py` (only ground-truth reader) -> `reports/metrics.md` + `metrics.json`; CLI `python -m planner evaluate --scale starter`.
+- Starter: 10 injected per anomaly type and 5 per boundary type (65 labels). Detection precision = recall = F1 = 1.0 for all 5 types, expected action 10/10 each, 0 boundary false positives, 20/20 machine-checkable expected outcomes hold. Test scale: 3 per type, same result.
+- Starter after injection: 11.71% SKU-locations short, 233 shortages; 79.8% COMPLIANT non-backorder recommendations; cost INR 244,068.55; 25 escalated; fill rate 99.9839% -> 99.9926%; 0 recommended VIOLATION.
+- All plan checks, generic PK/FK/enum/ID checks and the mitigation ledger pass on the injected data; raw input domain checks fail only on the injected records (po_qty_uom_moq, po_receipt_week_arithmetic, firm_po_within_supplier_capacity, in_transit_mirrors_open_pos) — Phase 6 reports those as expected failures.
+- Tests: 133 passing (adds tests/test_inject_evaluate.py: label counts, recall/precision 1.0, action as expected, 0 boundary FP, outcomes, only targeted records change, only expected raw checks fail, outputs valid on injected data, MANUAL proposals are VIOLATIONs, ground-truth isolation). Output in `reports/test_results.txt`.
+
 ## Next
-- Phase 5: inject anomalies (5 types) and boundary cases, `mitigation_proposal` MANUAL options, ground_truth.csv, `evaluate` with precision/recall.
+- Phase 6: full validation suite (`validate` -> reports/validation_summary.{md,json} with expected vs unexpected failures, SQLite FK check), exports (CSV/JSON/SQL seed), manifest + checksums, repro-check, data profile + figures; then full scale.
 
 ## Open issues
-- Remaining backorders are mostly W01-W03 shortages inside the lead-time fence (no lever lands in time) and MAKE shortages whose plant has no spare capacity before the run end.
+- Remaining backorders are mostly W01-W03 shortages inside the lead-time fence and MAKE shortages without spare plant capacity before the run end.
 - One recommended option per shortage; combinations (two transfers) are not proposed.
 - Headroom is 1.15-1.3, above the requested 1.0-1.15 (see Phase 3 decisions).
-- Full scale not run yet (Phase 6).
+- At starter the PO_QTY_EQUALS_MOQ picks are POs already at MOQ (label-only, stated in the label).
+- Full scale not run yet (Phase 6); `generate` now plans twice in memory (about 4 s at starter).

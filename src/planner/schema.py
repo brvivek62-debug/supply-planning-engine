@@ -809,6 +809,30 @@ SHORTAGE_EVENT = Table(
     ),
 )
 
+MITIGATION_PROPOSAL = Table(
+    "mitigation_proposal", "MANUAL mitigation proposals entered by planners for real shortages, checked by decide.",
+    KIND_INPUT, "planner (manual)",
+    pk=("mitigation_id",), natural_key=("shortage_id", "option_seq"),
+    fks=(fk("shortage_id", "shortage", label="proposed for"),
+         fk("ref_substitute_id", "sku_substitute", "substitute_id", optional=True, label="proposes"),
+         fk("ref_substitute_sku_id", "sku", "sku_id", label="proposes substitute")),
+    notes=("Entered after a first planning pass (generate -> plan -> proposals -> decide); decide turns each into a "
+           "mitigation_option with source = MANUAL and the same mitigation_id.",),
+    fields=(
+        _id("mitigation_id", "mitigation", "MIT-<shortage_id>-nn; option_seq >= 90 so it never clashes with "
+            "SYSTEM options.", pk=True, rule="= 'MIT-' + shortage_id + '-' + 2-digit option_seq"),
+        _id("shortage_id", "shortage", "Shortage the planner wants to mitigate."),
+        Field("option_seq", "integer", "Option number within the shortage.", ge=90, le=99),
+        _enum("option_type", ("SUBSTITUTE_SKU",), "Proposed lever (planners propose substitutions)."),
+        _id("ref_substitute_id", "substitute", "Substitution rule proposed; empty for an ad-hoc substitute with no "
+            "rule.", required=False),
+        _id("ref_substitute_sku_id", "sku", "Substitute SKU proposed.",
+            rule="= sku_substitute.substitute_sku_id when ref_substitute_id is set"),
+        _qty("qty_proposed_ea", "Quantity of the original SKU to cover.", gt=0),
+        _enum("created_by_role", ("PLANNER",), "Who proposed it."),
+    ),
+)
+
 GROUND_TRUTH = Table(
     "ground_truth", "Labels for injected anomalies and boundary cases. Never an input to the planner.",
     KIND_LABEL, "labels",
@@ -835,7 +859,7 @@ TABLES: tuple[Table, ...] = (
     LEAD_TIME, SUPPLIER_CAPACITY, PRODUCTION_CAPACITY,
     FORECAST_DEMAND, PURCHASE_ORDER, PURCHASE_ORDER_EVENT, INVENTORY_TXN, INVENTORY, PRODUCTION_PLAN,
     EXCEPTION, PLANNED_ORDER, PROJECTED_BALANCE, SHORTAGE, SHORTAGE_CAUSE, MITIGATION_OPTION, MITIGATION_LEDGER, SHORTAGE_EVENT,
-    GROUND_TRUTH,
+    MITIGATION_PROPOSAL, GROUND_TRUTH,
 )
 
 BY_NAME: dict[str, Table] = {t.name: t for t in TABLES}
