@@ -60,6 +60,10 @@ erDiagram
     SKU_SUBSTITUTE |o--o{ MITIGATION_OPTION : "applied in"
     SKU |o--o{ MITIGATION_OPTION : "substitutes in"
     LOCATION |o--o{ MITIGATION_OPTION : "produces for"
+    MITIGATION_OPTION ||--o{ MITIGATION_LEDGER : "books"
+    SUPPLIER |o--o{ MITIGATION_LEDGER : "consumes capacity of"
+    LOCATION |o--o{ MITIGATION_LEDGER : "consumes capacity of"
+    SKU_LOCATION |o--o{ MITIGATION_LEDGER : "moves stock of"
     SHORTAGE ||--o{ SHORTAGE_EVENT : "has history"
     MITIGATION_OPTION |o--o{ SHORTAGE_EVENT : "selected in"
 
@@ -307,6 +311,7 @@ erDiagram
         string ref_substitute_id FK
         string ref_substitute_sku_id FK
         string ref_plant_location_id FK
+        int action_qty_ea
         int qty_covered_ea
         decimal coverage_pct
         string arrival_week
@@ -318,6 +323,17 @@ erDiagram
         string policy_violation_reason
         bool requires_approval
         bool is_recommended
+    }
+    MITIGATION_LEDGER {
+        string mitigation_id PK, FK
+        int entry_seq PK
+        string resource_type
+        string supplier_id FK
+        string plant_location_id FK
+        string sku_id FK
+        string location_id FK
+        string week
+        int qty_ea
     }
     SHORTAGE_EVENT {
         string event_id PK
@@ -404,6 +420,10 @@ Parent : child. `optional` = the FK column may be empty (child need not referenc
 | `sku_substitute` | `mitigation_option` | `ref_substitute_id` | 1:N | yes |
 | `sku` | `mitigation_option` | `ref_substitute_sku_id` | 1:N | yes |
 | `location` | `mitigation_option` | `ref_plant_location_id` | 1:N | yes |
+| `mitigation_option` | `mitigation_ledger` | `mitigation_id` | 1:N | no |
+| `supplier` | `mitigation_ledger` | `supplier_id` | 1:N | yes |
+| `location` | `mitigation_ledger` | `plant_location_id` | 1:N | yes |
+| `sku_location` | `mitigation_ledger` | `sku_id, location_id` | 1:N | yes |
 | `shortage` | `shortage_event` | `shortage_id` | 1:N | no |
 | `mitigation_option` | `shortage_event` | `mitigation_id` | 1:N | yes |
 

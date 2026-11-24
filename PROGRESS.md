@@ -7,8 +7,8 @@
 | 1 | Schema & docs | ✅ done |
 | 2 | Generator | ✅ done (test + starter) |
 | 3 | Planning | ✅ done (test + starter) |
-| 4 | Mitigations | ⏳ next |
-| 5 | Edge cases & ground truth | — |
+| 4 | Mitigations | ✅ done (test + starter) |
+| 5 | Edge cases & ground truth | ⏳ next |
 | 6 | Validate, export, repro, full scale | — |
 | 7 | README & polish | — |
 
@@ -40,11 +40,18 @@
 - Realism tuning: temporary supplier disruptions (10% of suppliers, 4-8 wk at 0.5-0.7x) replace permanent 0.6-0.9x constraints; normal headroom 1.15-1.3 on forecast-level-corrected seasonal load; opening_cover_bias 1.5 (noise 0.20); just-in-time opening stock behind open delayed POs; component POs 8x delay weight; PLANNED production build-ahead 1 week; LOW_OPENING_STOCK threshold includes SS (see decisions).
 - Tests: 108 passing (adds PAB reconciliation + independent recompute + corruption detection, shortage/cause/explanation checks, planned-order policy, capacity ledger, production/BOM, determinism, quality-gate mutation tests per issue type, boundary no-exception test, no ground-truth reference in plan/ or validate/).
 
+## Phase 4 — done (test + starter)
+- `plan` now also writes `mitigation_option`, `mitigation_ledger` and the full `shortage_event` history; `shortage.status` = last event.
+- Modules: `plan/mitigations.py` (option generators + capacity ledger in priority-rank order, backfilled stock draws), `plan/decide.py` (policy, score, approval, recommendation, lifecycle events, UNAPPROVED_SUBSTITUTE exceptions incl. MANUAL proposals).
+- `validate/plan_checks.py`: mitigation_option_rules, mitigation_policy (recomputed from master data), mitigation_capacity_ledger (supplier / plant / stock recomputed from written tables), mitigation_coverage_recomputes, decision_matches_recommendation. Starter: 16 plan checks, 0 failures; generic PK/FK/enum/ID checks pass on the new tables.
+- Starter: 1,019 options for 245 shortages (TRANSFER 615, BACKORDER 245, ALTERNATE_SUPPLIER 68, INCREASE_PRODUCTION 58, SUBSTITUTE_SKU 21, EXPEDITE_PO 12; 29 VIOLATION alternatives). Recommended: TRANSFER 125, INCREASE_PRODUCTION 56, BACKORDER 42, ALTERNATE_SUPPLIER 10, SUBSTITUTE_SKU 7, EXPEDITE_PO 5. 82.9% get a COMPLIANT non-backorder recommendation, 63.7% fully covered; cost INR 246,101.92 (238,666.92 non-backorder); 177 SELECTED, 26 ESCALATED, 42 BACKORDER_ACCEPTED; fill rate 99.9833% -> 99.9931%.
+- Tests: 121 passing (adds tests/test_mitigations.py: checks pass, one recommendation per shortage, no recommended VIOLATION, ledger never negative, alternatives differ in cost/coverage, fill rate does not drop, mutation tests for recommended violation and ledger overbooking, MANUAL unapproved substitute flagged, draws keep SS).
+
 ## Next
-- Phase 4: mitigation options (EXPEDITE_PO, ALTERNATE_SUPPLIER, TRANSFER, SUBSTITUTE_SKU, INCREASE_PRODUCTION, BACKORDER) in priority-rank order against a capacity ledger seeded from `MrpResult.supplier_remaining` / `plant_remaining` and PAB surplus; scoring, policy status, approval, recommendation; shortage_event MITIGATION_PROPOSED -> SELECTED / ESCALATED / BACKORDER_ACCEPTED.
+- Phase 5: inject anomalies (5 types) and boundary cases, `mitigation_proposal` MANUAL options, ground_truth.csv, `evaluate` with precision/recall.
 
 ## Open issues
-- Headroom is 1.15-1.3, above the requested 1.0-1.15: at 1.0-1.15 starter was 25-30% short with year-long episodes (no slack to rebuild SS).
-- COMPONENT_SHORTAGE is never a primary cause at starter (components are protected by SS and MRP priority); it appears as a contributing cause only.
-- Disrupted suppliers (incl. one early component outage) are the main ALTERNATE_SUPPLIER / EXPEDITE test cases for Phase 4.
-- Full scale not run yet (Phase 6); the MRP loop is Python over triggered rows per week, expected to be a few seconds at full scale.
+- Remaining backorders are mostly W01-W03 shortages inside the lead-time fence (no lever lands in time) and MAKE shortages whose plant has no spare capacity before the run end.
+- One recommended option per shortage; combinations (two transfers) are not proposed.
+- Headroom is 1.15-1.3, above the requested 1.0-1.15 (see Phase 3 decisions).
+- Full scale not run yet (Phase 6).

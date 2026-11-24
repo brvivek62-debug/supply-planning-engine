@@ -67,6 +67,7 @@ MITIGATION_TYPES = (
 MITIGATION_SOURCES = ("SYSTEM", "MANUAL")
 MITIGATION_CREATORS = ("SYSTEM", "PLANNER")
 POLICY_STATUS = ("COMPLIANT", "VIOLATION")
+LEDGER_RESOURCES = ("SUPPLIER_CAPACITY", "PLANT_CAPACITY", "STOCK")
 ISSUE_TYPES = (
     "DUPLICATE_INBOUND", "UNAPPROVED_SUBSTITUTE", "SUPPLIER_CAPACITY_EXCEEDED",
     "LEAD_TIME_IGNORED", "UOM_MISMATCH",
@@ -738,20 +739,53 @@ MITIGATION_OPTION = Table(
             rule="= sku_substitute.substitute_sku_id"),
         _id("ref_plant_location_id", "location", "Plant producing extra.", required=False,
             rule="required for INCREASE_PRODUCTION"),
-        _qty("qty_covered_ea", "Quantity this option covers.", rule="<= shortage requirement"),
-        _rate("coverage_pct", "qty_covered / requirement.", unit="ratio 0-1"),
+        _qty("action_qty_ea", "Physical quantity ordered / expedited / transferred / substituted / produced "
+             "(EA of the SKU moved); 0 for BACKORDER."),
+        _qty("qty_covered_ea", "Reduction of the run's largest gap to safety stock.",
+             rule="<= shortage.below_ss_qty_ea (the requirement)"),
+        _rate("coverage_pct", "qty_covered_ea / shortage.below_ss_qty_ea.", unit="ratio 0-1"),
         _week("arrival_week", "When the covered quantity becomes available.", required=False),
         Field("weeks_late", "integer", "Weeks after shortage start_week the cover arrives.", unit="weeks", ge=0),
         _money("incremental_cost_inr", "Extra cost of the option."),
-        _rate("fill_rate_after", "SKU-location fill rate over the run if this option is taken."),
+        _rate("fill_rate_after", "SKU-location fill rate over the run if this option is taken.",
+              rule="1 - sum(min(demand, backlog)) / sum(demand) over the run weeks"),
         Field("score", "decimal", "Service gain minus normalised cost.", decimals=4),
         _enum("policy_status", POLICY_STATUS, "Policy / feasibility verdict."),
         _text("policy_violation_reason", "Why the option violates policy.", required=False,
               rule="required iff policy_status = VIOLATION"),
         _bool("requires_approval", "Needs OPERATIONS_MANAGER approval.",
-              rule="cost > approval threshold or > 25% of value at risk"),
+              rule="cost > approval threshold or > 25% of value at risk (SS-gap value when value at risk is 0)"),
         _bool("is_recommended", "Recommended option.",
               rule="at most one per shortage; only COMPLIANT options"),
+    ),
+)
+
+MITIGATION_LEDGER = Table(
+    "mitigation_ledger", "Capacity ledger entries booked by recommended mitigations, in priority-rank order.",
+    KIND_OUTPUT, "planner",
+    pk=("mitigation_id", "entry_seq"),
+    fks=(fk("mitigation_id", "mitigation_option", label="books"),
+         fk("supplier_id", "supplier", optional=True, label="consumes capacity of"),
+         fk("plant_location_id", "location", "location_id", optional=True, label="consumes capacity of"),
+         fk(("sku_id", "location_id"), "sku_location", optional=True, label="moves stock of")),
+    notes=("Only recommended options (incl. escalated ones, reserved pending approval) book entries.",
+           "SUPPLIER_CAPACITY / PLANT_CAPACITY: qty consumed in that week (negative = released, e.g. the old week "
+           "of an expedited PO). STOCK: change of the SKU-location's projected closing from that week on "
+           "(a draw of q over weeks t..b-1 is -q at t and +q at b, when a backfill order lands).",
+           "Checks: firm + planned receipts + SUPPLIER entries <= supplier capacity; production + PLANT entries <= "
+           "plant capacity; wherever a SKU-location's cumulative STOCK entries are negative its closing stays >= SS.",),
+    fields=(
+        _id("mitigation_id", "mitigation", "Recommended option that booked the entry."),
+        Field("entry_seq", "integer", "Entry number within the option.", ge=1),
+        _enum("resource_type", LEDGER_RESOURCES, "Ledger resource."),
+        _id("supplier_id", "supplier", "Supplier (SUPPLIER_CAPACITY).", required=False,
+            rule="required iff resource_type = SUPPLIER_CAPACITY"),
+        _id("plant_location_id", "location", "Plant (PLANT_CAPACITY).", required=False,
+            rule="required iff resource_type = PLANT_CAPACITY"),
+        _id("sku_id", "sku", "SKU (STOCK).", required=False, rule="required iff resource_type = STOCK"),
+        _id("location_id", "location", "Location (STOCK).", required=False, rule="required iff resource_type = STOCK"),
+        _week("week", "Week of the entry."),
+        _qty("qty_ea", "Signed quantity (see notes).", signed=True),
     ),
 )
 
@@ -800,7 +834,7 @@ TABLES: tuple[Table, ...] = (
     SKU_LOCATION, SUPPLIER_SKU, SKU_SUBSTITUTE, BOM,
     LEAD_TIME, SUPPLIER_CAPACITY, PRODUCTION_CAPACITY,
     FORECAST_DEMAND, PURCHASE_ORDER, PURCHASE_ORDER_EVENT, INVENTORY_TXN, INVENTORY, PRODUCTION_PLAN,
-    EXCEPTION, PLANNED_ORDER, PROJECTED_BALANCE, SHORTAGE, SHORTAGE_CAUSE, MITIGATION_OPTION, SHORTAGE_EVENT,
+    EXCEPTION, PLANNED_ORDER, PROJECTED_BALANCE, SHORTAGE, SHORTAGE_CAUSE, MITIGATION_OPTION, MITIGATION_LEDGER, SHORTAGE_EVENT,
     GROUND_TRUTH,
 )
 

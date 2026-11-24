@@ -13,15 +13,6 @@ from planner.validate import checks, plan_checks
 SRC = Path(__file__).resolve().parents[1] / "src" / "planner"
 
 
-@pytest.fixture(scope="session")
-def planned(generated, test_cfg):
-    """Plan the generated test scale and read every table (inputs + outputs) back from CSV."""
-    out, _ = generated
-    res = plan.run(test_cfg, out)
-    tables = tableio.read_all(out, tableio.fmt_of(test_cfg))
-    return res, tables
-
-
 def _copy(t):
     return {k: v.copy() for k, v in t.items()}
 
@@ -115,11 +106,14 @@ def test_lead_time_fence_cause_only_inside_fence(planned):
         assert cal.week_num(sh.at[r.shortage_id, "start_week"]) <= lt[r.evidence_id]
 
 
-def test_shortage_events_open(planned):
+def test_shortage_events_lifecycle(planned):
     _, t = planned
     ev, sh = t["shortage_event"], t["shortage"]
-    assert len(ev) == len(sh)
-    assert (ev["to_status"] == "OPEN").all() and (sh["status"] == "OPEN").all()
+    assert len(ev) == 3 * len(sh)
+    first = ev[ev["seq"] == 1]
+    assert (first["to_status"] == "OPEN").all() and len(first) == len(sh)
+    assert (ev.loc[ev["seq"] == 2, "to_status"] == "MITIGATION_PROPOSED").all()
+    assert set(sh["status"]) <= {"MITIGATION_SELECTED", "ESCALATED", "BACKORDER_ACCEPTED"}
     assert plan_checks.check_shortage_lifecycle(t).failures == 0
 
 

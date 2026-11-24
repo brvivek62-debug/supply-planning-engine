@@ -4,6 +4,7 @@ PRAGMA foreign_keys = ON;
 
 DROP TABLE IF EXISTS ground_truth;
 DROP TABLE IF EXISTS shortage_event;
+DROP TABLE IF EXISTS mitigation_ledger;
 DROP TABLE IF EXISTS mitigation_option;
 DROP TABLE IF EXISTS shortage_cause;
 DROP TABLE IF EXISTS shortage;
@@ -390,6 +391,7 @@ CREATE TABLE mitigation_option (
     ref_substitute_id TEXT,
     ref_substitute_sku_id TEXT,
     ref_plant_location_id TEXT,
+    action_qty_ea INTEGER NOT NULL CHECK (action_qty_ea >= 0),
     qty_covered_ea INTEGER NOT NULL CHECK (qty_covered_ea >= 0),
     coverage_pct REAL NOT NULL CHECK (coverage_pct >= 0 AND coverage_pct <= 1),
     arrival_week TEXT,
@@ -411,6 +413,24 @@ CREATE TABLE mitigation_option (
     FOREIGN KEY (ref_substitute_id) REFERENCES sku_substitute (substitute_id),
     FOREIGN KEY (ref_substitute_sku_id) REFERENCES sku (sku_id),
     FOREIGN KEY (ref_plant_location_id) REFERENCES location (location_id)
+);
+
+-- Capacity ledger entries booked by recommended mitigations, in priority-rank order.
+CREATE TABLE mitigation_ledger (
+    mitigation_id TEXT NOT NULL,
+    entry_seq INTEGER NOT NULL CHECK (entry_seq >= 1),
+    resource_type TEXT NOT NULL CHECK (resource_type IN ('SUPPLIER_CAPACITY', 'PLANT_CAPACITY', 'STOCK')),
+    supplier_id TEXT,
+    plant_location_id TEXT,
+    sku_id TEXT,
+    location_id TEXT,
+    week TEXT NOT NULL,
+    qty_ea INTEGER NOT NULL,
+    PRIMARY KEY (mitigation_id, entry_seq),
+    FOREIGN KEY (mitigation_id) REFERENCES mitigation_option (mitigation_id),
+    FOREIGN KEY (supplier_id) REFERENCES supplier (supplier_id),
+    FOREIGN KEY (plant_location_id) REFERENCES location (location_id),
+    FOREIGN KEY (sku_id, location_id) REFERENCES sku_location (sku_id, location_id)
 );
 
 -- Append-only shortage status history.

@@ -1,6 +1,6 @@
 import pytest
 
-from planner import generate, tableio
+from planner import generate, plan, tableio
 from planner.config import load_config
 
 
@@ -16,3 +16,12 @@ def generated(tmp_path_factory, test_cfg):
     generate.run(test_cfg, out)
     tables = tableio.read_all(out, tableio.fmt_of(test_cfg), list(generate.INPUT_TABLES))
     return out, tables
+
+
+@pytest.fixture(scope="session")
+def planned(generated, test_cfg):
+    """Plan the generated test scale and read every table (inputs + outputs) back from CSV."""
+    out, _ = generated
+    res = plan.run(test_cfg, out)
+    tables = tableio.read_all(out, tableio.fmt_of(test_cfg))
+    return res, tables

@@ -1,4 +1,4 @@
-"""Checks on planner outputs (Phase 3): PAB reconciliation, shortages vs PAB, cause evidence, planned orders,
+"""Checks on planner outputs (Phases 3-4): PAB reconciliation, shortages vs PAB, cause evidence, planned orders,
 capacity ledger, production/BOM and the shortage lifecycle. Every check recomputes from the written tables;
 none reads ground truth. The quality gate is re-run (it is deterministic) to obtain firm receipts.
 """
@@ -215,4 +215,208 @@ def run_plan_checks(t, cfg) -> list[CheckResult]:
            check_planned_orders(t, cfg), check_capacity_ledger(t, cfg), check_shortage_lifecycle(t)]
     out += check_shortage_causes(t)
     out += check_production_and_components(t)
+    if "mitigation_option" in t:
+        out += run_mitigation_checks(t, cfg)
     return out
+
+
+# --------------------------------------------------------------------------------------------
+# Phase 4: mitigation options, policy, capacity ledger, decisions
+# --------------------------------------------------------------------------------------------
+
+def _eff(ef, et, day) -> bool:
+    return str(ef) <= day and (et is None or (isinstance(et, float) and et != et) or str(et) >= day)
+
+
+def _base_value(sh: pd.DataFrame, sku: pd.DataFrame) -> pd.Series:
+    price = sh["sku_id"].map(sku["unit_price_inr"]).astype(float)
+    return sh["value_at_risk_inr"].where(sh["value_at_risk_inr"] > 0, sh["below_ss_qty_ea"] * price)
+
+
+def check_mitigation_options(t, cfg) -> CheckResult:
+    mo, sh = t["mitigation_option"], t["shortage"].set_index("shortage_id")
+    sku = t["sku"].set_index("sku_id")
+    if len(mo) == 0:
+        return CheckResult("mitigation_option_rules", "mitigation_option", 0, int(len(sh) > 0), "no options")
+    s = mo["shortage_id"]
+    below = s.map(sh["below_ss_qty_ea"])
+    start = s.map(sh["start_week"]).map(cal.week_num)
+    end = s.map(sh["end_week"]).map(cal.week_num)
+    arr = mo["arrival_week"].map(lambda w: cal.week_num(w) if isinstance(w, str) else np.nan)
+    base = s.map(_base_value(sh.reset_index(), sku).set_axis(sh.index))
+    pol = cfg["policy"]
+    appr = (mo["incremental_cost_inr"] > float(pol["approval_cost_threshold_inr"])) | (
+        mo["incremental_cost_inr"] > float(pol["approval_var_share"]) * base)
+    late = np.where(mo["option_type"] == "BACKORDER", end - start + 1, np.maximum(0, arr - start))
+    rec = mo["is_recommended"].astype(bool)
+    reason = ~_blank(mo["policy_violation_reason"])
+    t_ = mo["option_type"]
+    refs_ok = (((t_ != "EXPEDITE_PO") | ~_blank(mo["ref_po_id"]))
+               & ((t_ != "ALTERNATE_SUPPLIER") | ~_blank(mo["ref_supplier_id"]))
+               & ((t_ != "TRANSFER") | (~_blank(mo["ref_from_location_id"])
+                                         & (mo["ref_from_location_id"] != s.map(sh["location_id"]))))
+               & ((t_ != "SUBSTITUTE_SKU") | (~_blank(mo["ref_substitute_id"]) & ~_blank(mo["ref_substitute_sku_id"])))
+               & ((t_ != "INCREASE_PRODUCTION") | ~_blank(mo["ref_plant_location_id"])))
+    bad = ((mo["mitigation_id"] != "MIT-" + s + "-" + mo["option_seq"].map(lambda k: f"{int(k):02d}"))
+           | (mo["qty_covered_ea"] > below) | ((mo["coverage_pct"] - mo["qty_covered_ea"] / below).abs() > 1e-4)
+           | (mo["weeks_late"] != late) | (mo["requires_approval"].astype(bool) != appr)
+           | ((mo["policy_status"] == "VIOLATION") != reason) | (rec & (mo["policy_status"] != "COMPLIANT"))
+           | ((mo["source"] == "SYSTEM") != (mo["created_by_role"] == "SYSTEM")) | ~refs_ok
+           | ((t_ == "BACKORDER") & (mo["qty_covered_ea"] != 0)) | (arr > end)).to_numpy()
+    # exactly one recommendation per shortage, and it is the best compliant non-backorder option (or backorder)
+    per = []
+    cand = mo[(mo["policy_status"] == "COMPLIANT") & (t_ != "BACKORDER") & (mo["qty_covered_ea"] > 0)]
+    best = cand.groupby("shortage_id")["score"].max()
+    for sid in sh.index:
+        r = mo[(s == sid) & rec]
+        if len(r) != 1:
+            per.append(True)
+            continue
+        r = r.iloc[0]
+        per.append((r["option_type"] == "BACKORDER") == (sid in best.index)
+                   or (sid in best.index and r["score"] < best[sid] - 1e-9))
+    return _result("mitigation_option_rules", "mitigation_option", len(mo) + len(sh),
+                   np.concatenate([bad, np.array(per, dtype=bool)]), None, None,
+                   "ID = MIT-<shortage>-<seq>; covered <= below-SS requirement; coverage = covered / requirement; "
+                   "weeks_late; approval rule; VIOLATION <=> reason; required refs; exactly one recommendation per "
+                   "shortage = best-scoring COMPLIANT non-backorder option, else BACKORDER; never a VIOLATION")
+
+
+def check_mitigation_policy(t) -> CheckResult:
+    """Recompute the policy verdict of every COMPLIANT option from the master data."""
+    mo, sh = t["mitigation_option"], t["shortage"].set_index("shortage_id")
+    po = t["purchase_order"].set_index("po_id")
+    lt = t["lead_time"].set_index("lead_time_id")
+    region = t["location"].set_index("location_id")["region"]
+    sup_status = t["supplier"].set_index("supplier_id")["status"]
+    sst = t["supplier_sku"]
+    sub = t["sku_substitute"].set_index("substitute_id")
+    exc = t["exception"]
+    flagged = set(exc.loc[exc["issue_type"] == "UNAPPROVED_SUBSTITUTE", "record_id"])
+    bad = []
+    for r in mo.itertuples(index=False):
+        s = sh.loc[r.shortage_id]
+        day = cal.week_start_of(s["start_week"]).isoformat()
+        ok = True
+        if r.option_type == "SUBSTITUTE_SKU":
+            x = sub.loc[r.ref_substitute_id] if r.ref_substitute_id in sub.index else None
+            usable = (x is not None and x["approval_status"] == "APPROVED" and x["sku_id"] == s["sku_id"]
+                      and _eff(x["effective_from"], x["effective_to"], day)
+                      and x["substitute_sku_id"] == r.ref_substitute_sku_id)
+            ok = usable == (r.policy_status == "COMPLIANT")
+            ok &= usable or r.mitigation_id in flagged           # every unusable substitute raised an exception
+        elif r.policy_status != "COMPLIANT":
+            pass
+        elif r.option_type == "EXPEDITE_PO":
+            p, ln = po.loc[r.ref_po_id], lt.loc[r.ref_lead_time_id]
+            ok = (p["status"] in ("CREATED", "CONFIRMED") and p["sku_id"] == s["sku_id"]
+                  and p["ship_to_location_id"] == s["location_id"] and bool(ln["is_expedite_lane"])
+                  and ln["transport_mode"] == "AIR" and ln["supplier_id"] == p["supplier_id"]
+                  and ln["dest_region"] == region[s["location_id"]]
+                  and cal.week_num(r.arrival_week) <= cal.week_num(s["start_week"]))
+        elif r.option_type == "ALTERNATE_SUPPLIER":
+            ln = lt.loc[r.ref_lead_time_id]
+            rel = cal.week_num(r.arrival_week) - int(ln["total_lead_weeks"])
+            lines = sst[(sst["supplier_id"] == r.ref_supplier_id) & (sst["sku_id"] == s["sku_id"])
+                        & ~sst["is_primary"].astype(bool) & (sst["approval_status"] == "APPROVED")]
+            rd = cal.week_start(max(rel, 1)).isoformat()
+            lines = lines[[_eff(a, b, rd) for a, b in zip(lines["effective_from"], lines["effective_to"])]]
+            q_ok = any(r.action_qty_ea % (int(x.uom_conversion) * int(x.order_multiple)) == 0
+                       and r.action_qty_ea >= int(x.moq) * int(x.uom_conversion) for x in lines.itertuples())
+            ok = (rel >= 1 and len(lines) > 0 and q_ok and sup_status.get(r.ref_supplier_id) == "ACTIVE"
+                  and not bool(ln["is_expedite_lane"]) and ln["supplier_id"] == r.ref_supplier_id
+                  and ln["dest_region"] == region[s["location_id"]] and _eff(ln["effective_from"], ln["effective_to"], rd)
+                  and cal.week_num(r.arrival_week) <= cal.week_num(s["end_week"]))
+        bad.append(not ok)
+    return _result("mitigation_policy", "mitigation_option", len(mo), np.array(bad, dtype=bool), mo,
+                   ["mitigation_id"], "EXPEDITE: unshipped PO, AIR lane, arrives by start; ALTERNATE: APPROVED + "
+                   "effective line, ACTIVE supplier, release >= W01, MOQ/multiple, receipt <= end; SUBSTITUTE: "
+                   "COMPLIANT <=> APPROVED + effective, otherwise an UNAPPROVED_SUBSTITUTE exception")
+
+
+def check_mitigation_ledger(t, cfg) -> list[CheckResult]:
+    """Capacity ledger never negative after the recommended mitigations, recomputed from the written tables."""
+    W = cfg.weeks
+    led, mo = t["mitigation_ledger"], t["mitigation_option"]
+    rec_ids = set(mo.loc[mo["is_recommended"].astype(bool), "mitigation_id"])
+    rt = led["resource_type"]
+    shape_bad = (~led["mitigation_id"].isin(rec_ids)
+                 | ((rt == "SUPPLIER_CAPACITY") == _blank(led["supplier_id"]))
+                 | ((rt == "PLANT_CAPACITY") == _blank(led["plant_location_id"]))
+                 | ((rt == "STOCK") == (_blank(led["sku_id"]) | _blank(led["location_id"])))).to_numpy()
+    # supplier capacity: firm (quality-gated) + planned + mitigation entries <= capacity
+    gate = quality_gate.run(t, W)
+    cap = t["supplier_capacity"].set_index(["supplier_id", "week"])["capacity_qty_ea"]
+    fr = gate.firm_receipts.assign(week=gate.firm_receipts["w"].map(cal.week_label))
+    load = fr.groupby(["supplier_id", "week"])["qty_ea"].sum()
+    pl = t["planned_order"].groupby(["supplier_id", "receipt_week"])["qty_base_ea"].sum()
+    pl.index.names = ["supplier_id", "week"]
+    sm = led[rt == "SUPPLIER_CAPACITY"].groupby(["supplier_id", "week"])["qty_ea"].sum()
+    tot = load.add(pl, fill_value=0).add(sm, fill_value=0)
+    sup_bad = (cap.reindex(tot.index).isna() | (tot > cap.reindex(tot.index))).to_numpy()
+    # plant capacity
+    pcap = t["production_capacity"].set_index(["plant_location_id", "week"])["capacity_qty_ea"]
+    pload = t["production_plan"].groupby(["plant_location_id", "week"])["capacity_used_ea"].sum()
+    pm = led[rt == "PLANT_CAPACITY"].groupby(["plant_location_id", "week"])["qty_ea"].sum()
+    ptot = pload.add(pm, fill_value=0)
+    plant_bad = (pcap.reindex(ptot.index).isna() | (ptot > pcap.reindex(ptot.index))).to_numpy()
+    # stock: wherever a SKU-location has given stock away (cumulative entries < 0) it stays >= safety stock
+    pab = t["projected_balance"].sort_values(["sku_id", "location_id", "week"])
+    keys = pab[["sku_id", "location_id"]].drop_duplicates().reset_index(drop=True)
+    kidx = {k: i for i, k in enumerate(zip(keys["sku_id"], keys["location_id"]))}
+    closing = pab["closing_qty"].to_numpy().reshape(len(keys), W)
+    ss = pab["safety_stock_qty"].to_numpy().reshape(len(keys), W)[:, :1]
+    flow = np.zeros_like(closing)
+    st = led[rt == "STOCK"]
+    for r in st.itertuples(index=False):
+        flow[kidx[(r.sku_id, r.location_id)], cal.week_num(r.week) - 1] += r.qty_ea
+    net = np.cumsum(flow, axis=1)
+    stock_bad = ((net < 0) & (closing + net < ss))[np.abs(net).sum(axis=1) > 0].ravel()
+    r1 = _result("mitigation_capacity_ledger", "mitigation_ledger",
+                 len(shape_bad) + len(sup_bad) + len(plant_bad) + len(stock_bad),
+                 np.concatenate([shape_bad, sup_bad, plant_bad, stock_bad]), None, None,
+                 "entries only for recommended options; firm + planned + mitigation load <= supplier capacity; "
+                 "production + overtime <= plant capacity; a SKU-location that gives stock stays >= safety stock")
+    # coverage of each recommended option recomputed from PAB + its own stock entries
+    sh = t["shortage"].set_index("shortage_id")
+    rec = mo[mo["is_recommended"].astype(bool) & (mo["option_type"] != "BACKORDER")]
+    cov_bad = []
+    for r in rec.itertuples(index=False):
+        s = sh.loc[r.shortage_id]
+        i = kidx[(s["sku_id"], s["location_id"])]
+        a, b = cal.week_num(s["start_week"]) - 1, cal.week_num(s["end_week"])
+        f = np.zeros(W, dtype=np.int64)
+        own = st[(st["mitigation_id"] == r.mitigation_id) & (st["sku_id"] == s["sku_id"])
+                 & (st["location_id"] == s["location_id"])]
+        for e in own.itertuples(index=False):
+            f[cal.week_num(e.week) - 1] += e.qty_ea
+        seg = closing[i, a:b] + np.cumsum(f)[a:b]
+        gap = max(0, int((ss[i, 0] - seg).max()))
+        cov_bad.append(int(s["below_ss_qty_ea"]) - gap != int(r.qty_covered_ea))
+    r2 = _result("mitigation_coverage_recomputes", "mitigation_option", len(cov_bad), np.array(cov_bad, dtype=bool),
+                 rec, ["mitigation_id"], "qty_covered = below-SS gap closed by the option's own ledger entries")
+    return [r1, r2]
+
+
+def check_decisions(t) -> CheckResult:
+    """Final shortage status follows the recommendation; the final event names the recommended option."""
+    sh, mo, ev = t["shortage"], t["mitigation_option"], t["shortage_event"]
+    rec = mo[mo["is_recommended"].astype(bool)].set_index("shortage_id")
+    last = ev.sort_values(["shortage_id", "seq"]).groupby("shortage_id").last()
+    bad = []
+    for r in sh.itertuples(index=False):
+        if r.shortage_id not in rec.index or r.shortage_id not in last.index:
+            bad.append(True)
+            continue
+        o, e = rec.loc[r.shortage_id], last.loc[r.shortage_id]
+        want = ("BACKORDER_ACCEPTED" if o["option_type"] == "BACKORDER" else
+                "ESCALATED" if bool(o["requires_approval"]) else "MITIGATION_SELECTED")
+        bad.append(not (r.status == want == e["to_status"] and e["mitigation_id"] == o["mitigation_id"]))
+    return _result("decision_matches_recommendation", "shortage", len(sh), np.array(bad, dtype=bool), sh,
+                   ["shortage_id"], "BACKORDER -> BACKORDER_ACCEPTED; approval needed -> ESCALATED; else "
+                   "MITIGATION_SELECTED; final event carries the recommended mitigation_id")
+
+
+def run_mitigation_checks(t, cfg) -> list[CheckResult]:
+    return [check_mitigation_options(t, cfg), check_mitigation_policy(t), *check_mitigation_ledger(t, cfg),
+            check_decisions(t)]
