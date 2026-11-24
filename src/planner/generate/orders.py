@@ -195,7 +195,12 @@ def gen_purchase_orders(ctx: Ctx) -> tuple[pd.DataFrame, pd.DataFrame]:
 
     eligible = [i for i, po in enumerate(pos) if po["cls"] == "OPEN" and in_transit_before_cutoff(po)]
     need = max(0, int(round(N * rate)) - sum(1 for po in pos if po["delay"] > 0))
-    for i in sorted(rng.choice(eligible, size=min(need, len(eligible)), replace=False).tolist()) if eligible else []:
+    # component POs (inbound to plants) are `component_delay_weight` x as likely to be delayed: they are the
+    # long-haul, single-source inbound legs, and a late component is what starves MAKE production
+    comp = ctx["sku"].set_index("sku_id")["sku_type"].eq("COMPONENT")
+    wgt = np.array([float(pc.get("component_delay_weight", 1.0)) if comp[pos[i]["sku_id"]] else 1.0 for i in eligible])
+    for i in sorted(rng.choice(eligible, size=min(need, len(eligible)), replace=False,
+                               p=wgt / wgt.sum()).tolist()) if eligible else []:
         pos[i]["delay"] = int(rng.integers(dlo, dhi + 1))
 
     # Allocate open POs against supplier capacity at their revised receipt week.

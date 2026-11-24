@@ -149,11 +149,6 @@ def gen_supplier(ctx: Ctx) -> pd.DataFrame:
         "effective_from": rand_dates(rng, date(2010, 1, 1), date(2023, 12, 31), n),
         "effective_to": [e if s == "INACTIVE" else None for e, s in zip(eff_to_dates, status)],
     })
-    share = ctx.cfg["supply"]["constrained_supplier_share"]
-    n_con = int(round(n * share))
-    constrained = np.zeros(n, dtype=bool)
-    constrained[rng.choice(n, size=n_con, replace=False)] = True
-    ctx.aux["constrained"] = pd.Series(constrained, index=df["supplier_id"])   # latent, never exported
     ctx.aux["supplier_weight"] = pd.Series(rng.lognormal(0, 1.0, n), index=df["supplier_id"])
     ctx.aux["importer"] = pd.Series(rng.random(n) < 0.15, index=df["supplier_id"])
     return df

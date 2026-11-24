@@ -234,6 +234,7 @@ def run_mrp(g: Grid, gate: GateResult, cfg) -> MrpResult:
     cover = int(cfg["policy"]["planned_order_cover_weeks"])
     prebuild = int(cfg["policy"].get("prebuild_weeks", cover))
     firm_weeks = int(cfg["production"]["firm_weeks"])
+    build_ahead = int(cfg["production"].get("build_ahead_weeks", 0))
     sup_rem = gate.supplier_remaining.reindex(g.supplier_ids).fillna(0).to_numpy(dtype=np.int64).copy()
     cap_ids = gate.capacity_ids.reindex(g.supplier_ids).to_numpy(dtype=object)
     plant_rem = g.plant_cap.copy()
@@ -319,6 +320,23 @@ def run_mrp(g: Grid, gate: GateResult, cfg) -> MrpResult:
         else:
             final = cap_to_plant_capacity(feasible, make_rows, g.plant_idx, plant_rem[:, w])
             capcut = feasible - final
+            if build_ahead > 0 and len(make_rows):
+                # build ahead: spare plant capacity (and components above their SS) pre-builds the next weeks' demand;
+                # it is opportunistic, so it never counts as a cut
+                hi = min(W, w + 1 + build_ahead)
+                want = np.zeros(N, dtype=np.int64)
+                want[make_rows] = np.maximum(
+                    0, g.ss[make_rows] + D[make_rows, w:hi].sum(axis=1) - prev[make_rows] - requested[make_rows])
+                if want.any():
+                    used_c, need_a = np.zeros(N, dtype=np.int64), np.zeros(N, dtype=np.int64)
+                    np.add.at(used_c, bc[eff], final[bp[eff]] * bq[eff])
+                    np.add.at(need_a, bc[eff], want[bp[eff]] * bq[eff])
+                    extra, _ = component_limited(want, need_a, avail_c - used_c - g.ss, bp, bc, bq, eff)   # keep component SS
+                    used_p = np.bincount(g.plant_idx[make_rows], weights=final[make_rows],
+                                         minlength=len(g.plants)).astype(np.int64)
+                    extra = cap_to_plant_capacity(extra, make_rows, g.plant_idx, plant_rem[:, w] - used_p)
+                    final = final + extra
+                    requested = requested + extra
         plant_rem[:, w] -= np.bincount(g.plant_idx[make_rows], weights=final[make_rows],
                                        minlength=len(g.plants)).astype(np.int64)
         need_final = np.zeros(N, dtype=np.int64)

@@ -42,11 +42,12 @@ def build(cfg: Config) -> Ctx:
     t["sku_substitute"] = gen_sku_substitute(ctx)
     # 3. supply
     t["lead_time"] = gen_lead_time(ctx)
-    t["supplier_capacity"] = gen_supplier_capacity(ctx)
-    t["production_capacity"] = gen_production_capacity(ctx)
     # 4. demand (+ derived safety stock on the assortment bridge)
     t["forecast_demand"] = gen_forecast_demand(ctx)
     fill_safety_stock(ctx)
+    # 3b. capacity is sized on the published forecast level (suppliers plan capacity on customer forecasts)
+    t["supplier_capacity"] = gen_supplier_capacity(ctx)
+    t["production_capacity"] = gen_production_capacity(ctx)
     # 5. purchase orders and their event history
     t["purchase_order"], t["purchase_order_event"] = gen_purchase_orders(ctx)
     # 6. ledger -> inventory snapshot

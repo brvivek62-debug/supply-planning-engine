@@ -6,6 +6,7 @@ from datetime import date, timedelta
 import numpy as np
 import pandas as pd
 
+from planner import calendar as cal
 from planner import ids
 
 from .common import Ctx, rand_dates, round_half_up
@@ -44,9 +45,28 @@ def gen_inventory(ctx: Ctx) -> tuple[pd.DataFrame, pd.DataFrame]:
     ctx.aux["primary_lead_weeks"] = pd.Series(lead, index=pd.MultiIndex.from_frame(sl))
     noise = float(ic["opening_cover_noise"])
     cover = (lead + ssw) * rng.uniform(1 - noise, 1 + noise, n) * float(ic.get("opening_cover_bias", 1.0))
-    target = round_half_up(cover * mean)
 
     po = ctx["purchase_order"]
+    # Just-in-time cover: for a share of SKU-locations with an open, delayed PO the opening stock was planned to
+    # last only until the PO's original expected week (SS + demand up to it + a fraction of a week), so the delay
+    # lands in thin stock. Own stream: the other inventory draws are unchanged.
+    trng = ctx.rngs("inventory_jit_cover")
+    dl = po[(po["delay_weeks"] > 0) & ~po["status"].isin(["RECEIVED", "CANCELLED"])].copy()
+    dl["exp"] = dl["expected_receipt_week"].map(cal.label_offset)
+    dl = dl[dl["exp"] >= 1].groupby(["sku_id", "ship_to_location_id"])["exp"].min()
+    pos = pd.Series(np.arange(n), index=pd.MultiIndex.from_frame(sl))
+    hit = pos.reindex(dl.index).dropna().astype(int)
+    pick = trng.random(len(hit)) < float(ic.get("delayed_po_thin_share", 0.0))
+    lo_f, hi_f = ic.get("delayed_po_thin_cover", [0.2, 0.7])
+    frac = trng.uniform(lo_f, hi_f, len(hit))
+    # components: the plant has already run its line-side buffer (SS) down waiting for the late PO
+    is_comp = sl["sku_id"].map(ctx["sku"].set_index("sku_id")["sku_type"]).eq("COMPONENT").to_numpy()
+    rows_all = hit.to_numpy()
+    pick |= is_comp[rows_all]
+    rows = rows_all[pick]
+    cover[rows] = np.where(is_comp[rows], 0.0, ssw[rows]) + (dl.loc[hit.index].to_numpy()[pick] - 1) + frac[pick]
+    target = round_half_up(cover * mean)
+
     recv = po[po["status"] == "RECEIVED"].copy()
     recv["txn_date"] = recv["po_id"].map(ctx.aux["po_receipt_date"])
     rsum = recv.groupby(["sku_id", "ship_to_location_id"])["qty_base_ea"].sum()

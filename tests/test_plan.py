@@ -91,7 +91,8 @@ def test_explanations_name_quantities_weeks_and_evidence(planned):
     for r in sh.itertuples(index=False):
         assert re.search(r"\d+ EA", r.explanation) and r.start_week in r.explanation
         ev = main[main["shortage_id"] == r.shortage_id]
-        top = ev.sort_values("contribution_qty_ea", ascending=False).groupby("cause_code").head(1)
+        # every evidence row tied for the largest contribution of its cause may be the one quoted
+        top = ev[ev["contribution_qty_ea"] == ev.groupby("cause_code")["contribution_qty_ea"].transform("max")]
         assert any(e in r.explanation for e in top["evidence_id"]), r.explanation
 
 

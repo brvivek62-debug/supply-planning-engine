@@ -12,7 +12,7 @@ SUPPLIER_CAPACITY   planned order received in the run or up to cover-weeks befor
                     into/after the run start -> capacity_id of the overloaded supplier-week
 LEAD_TIME_FENCE     BUY: run starts before the first week a new order released in W01 can arrive -> lead_time_id
 LOW_OPENING_STOCK   run starts inside the replenishment lead time (BUY lane lead time; MAKE firm horizon) and
-                    ON_HAND covers fewer weeks of mean demand than that lead time -> inventory_id
+                    ON_HAND < lead time x mean weekly demand + safety stock -> inventory_id
 COMPONENT_SHORTAGE  MAKE production cut for lack of a component in the run or up to firm-weeks before it
                     -> prod_plan_id (+ bom_id of the limiting component)
 PRODUCTION_CAPACITY MAKE production cut by plant capacity in the run or up to firm-weeks before it -> prod_plan_id
@@ -165,11 +165,12 @@ def _causes(ev: _Evidence, i: int, s: int, e: int, closing: np.ndarray, ss: int,
                     f"{int(ev.fence[i])}-week {ev.fence_mode[i]} lane)"))
     lead = int(ev.lead[i])
     mean = float(ev.mean[i])
-    if s < lead and mean > 0 and on_hand < lead * mean:
+    if s < lead and mean > 0 and on_hand < lead * mean + ss:
         cover = on_hand / mean
         what = f"{lead}-week lead time" if g.is_buy[i] else f"{lead}-week firm production horizon"
-        out.append(("LOW_OPENING_STOCK", "inventory", g.on_hand_id[i], int(math.ceil(lead * mean - on_hand)),
-                    f"opening stock {_n(on_hand)} EA covers {cover:.1f} weeks vs {what} ({g.on_hand_id[i]})"))
+        out.append(("LOW_OPENING_STOCK", "inventory", g.on_hand_id[i], int(math.ceil(lead * mean + ss - on_hand)),
+                    f"opening stock {_n(on_hand)} EA covers {cover:.1f} weeks, short of the {what} plus "
+                    f"safety stock {_n(ss)} EA ({g.on_hand_id[i]})"))
     comp_rows, cap_rows = defaultdict(list), []
     for ppid, w, capcut, compcut, bom_id in sorted(ev.prod_cuts.get(i, [])):
         if s - ev.firm_weeks <= w <= e:

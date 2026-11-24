@@ -29,7 +29,7 @@ required phases in about 12 working hours.
 
 | Area | What they check | How we satisfy it |
 |---|---|---|
-| A | Realistic distributions, meaningful variation | ABC demand skew, seasonality, promo spikes, constrained suppliers, delays, substitutes; `reports/data_profile.md` |
+| A | Realistic distributions, meaningful variation | ABC demand skew, seasonality, promo spikes, temporary supplier disruptions, delays, substitutes; `reports/data_profile.md` |
 | B | Consistent IDs, valid joins | Exact ID patterns; PK/FK validator; SQLite FK check |
 | C | Dependency & lifecycle consistency | Parent tables generated first; event tables with allowed status transitions |
 | D | Correct derived values, reconciliation | All balances, statuses, dates and totals computed from source rows; reconciliation checks |
@@ -121,7 +121,7 @@ the same generator code.
 | boundary cases per type | 2 | 5 | 15 |
 
 Also in config: as-of date, assortment size per SKU, promo spike rate, delay rate,
-constrained-supplier share, substitute share, policy thresholds and cost parameters.
+supplier disruption share/length/depth, substitute share, policy thresholds and cost parameters.
 The `test` scale is for pytest and must run in a few seconds.
 
 ## 6. Determinism rules (needed for identical checksums)
@@ -203,9 +203,14 @@ As-of date = **2025-12-29** (the planning run happens at the start of 2026W01).
 
 ### 8.3 Supply, demand and inventory
 - **supplier_capacity**: capacity_id, supplier_id, week, capacity_qty_ea. This is the
-  quantity deliverable per receipt week, sized from the supplier's expected load ×
-  headroom: 1.1–1.6 normally, 0.6–0.9 for about 10% of suppliers (these are the
-  constrained ones).
+  quantity deliverable per receipt week, sized from the supplier's seasonal expected load
+  (level-corrected to the published forecast) × headroom 1.15–1.3 × ±8% weekly noise.
+  Constraints are **temporary**: about 10% of suppliers get one 4–8 week disruption window
+  at 0.5–0.7× normal capacity (one of them a component supplier whose outage is already
+  under way at W02–W04); all other windows start after W02 and end at least 8 weeks before
+  W52, so shortage episodes recover. No disruption flag is stored. (A 1.0–1.15 headroom
+  was tried and rejected: at ~1.08× demand on average there is no slack to rebuild safety
+  stock, so low-priority SKUs stay short all year — see docs/decisions.md.)
 - **production_capacity**: plant_location_id, week, capacity_qty_ea.
 - **lead_time**: lead_time_id, supplier_id, dest_region, transport_mode
   {ROAD, RAIL, SEA, AIR}, is_expedite_lane, production_days, transit_days,
@@ -234,8 +239,13 @@ As-of date = **2025-12-29** (the planning run happens at the start of 2026W01).
   - occasional cycle-count ADJUSTMENT rows
 - **inventory**: inventory_id, sku_id, location_id, inventory_status
   {ON_HAND, IN_TRANSIT}, qty_ea, as_of_date, po_id (required when IN_TRANSIT).
-  - ON_HAND **must equal the ledger sum** per SKU-location. Calibrate opening cover at
-    roughly (lead time + safety stock weeks) ± noise, so shortages are a minority.
+  - ON_HAND **must equal the ledger sum** per SKU-location. Opening cover =
+    (lead time + safety stock weeks) × U(0.8, 1.2) × `opening_cover_bias` 1.5, so shortages
+    are a minority. For half of the SKU-locations with an open delayed PO (all of them for
+    components) the opening stock is just-in-time: SS weeks (0 for components) + weeks until
+    the PO's original expected week + 0.2–0.7 week, so the delay lands in thin stock and
+    PO_DELAYED / LOW_OPENING_STOCK show up as causes. Component POs are 8× as likely to
+    carry the open-PO transport delay.
   - IN_TRANSIT rows mirror open POs with status SHIPPED / IN_TRANSIT / DELAYED. They are
     informational; scheduled receipts come from POs (see 10.1).
 - **purchase_order**: po_id, supplier_id, sku_id, ship_to_location_id, lead_time_id,
@@ -334,7 +344,9 @@ For BUY SKU-locations, generate planned orders like an MRP run:
 
 ### 10.4 Production and BOM
 For MAKE SKUs at plants:
-- PLANNED production covers net requirements, capped by production_capacity.
+- PLANNED production covers net requirements, capped by production_capacity. Spare plant
+  capacity (and component stock above its SS) then pre-builds up to `build_ahead_weeks` (1)
+  of next demand; build-ahead is opportunistic and never counts as a cut.
 - Component dependent demand = production qty × qty_per, shown as demand_qty in the
   component PAB.
 - If a component goes short, cut the parent's production proportionally and record the
@@ -359,7 +371,7 @@ evidence record:
 | PO_DELAYED | A PO was due in or before the run but is delayed into or after it | po_id |
 | SUPPLIER_CAPACITY | Planned order cut by capacity | planned_order_id or capacity_id |
 | LEAD_TIME_FENCE | The run starts before W01 + lead time, so a new order can't arrive in time | lead_time_id |
-| LOW_OPENING_STOCK | Opening cover < lead time weeks | inventory_id |
+| LOW_OPENING_STOCK | Run starts inside the lead time and ON_HAND < lead time × mean weekly demand + safety stock | inventory_id |
 | COMPONENT_SHORTAGE | MAKE production was cut because of a component | prod_plan_id / bom_id |
 
 `explanation` is one generated sentence naming quantities, weeks and IDs, e.g. "Stockout
@@ -562,7 +574,7 @@ checklist with the file path that proves it. In particular check:
 - Event history is kept.
 - Exact ID patterns are used.
 - 3,000 / 50 / 52 / 500 / 10,000 volumes are met at full scale.
-- Demand spikes, constrained suppliers, substitutes and transport delays are present.
+- Demand spikes, supplier disruptions, substitutes and transport delays are present.
 - Seed 20261022 is used.
 - All 5 edge cases are labelled and traceable.
 - Ground truth is separate.

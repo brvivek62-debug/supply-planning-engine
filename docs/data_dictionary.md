@@ -254,7 +254,7 @@ Quantity a supplier can deliver per receipt week (all SKUs combined).
 - **Core entity (brief):** SupplierCapacity
 - **Natural key (unique):** `supplier_id, week`
 - **Foreign keys:** `supplier_id` → `supplier.supplier_id` (1:N)
-- Sized as expected weekly load x headroom: 1.1-1.6 normally, 0.6-0.9 for ~10% of suppliers (the constrained ones). No 'constrained' flag is stored.
+- Sized as seasonal expected weekly load (level-corrected to the published forecast) x headroom 1.15-1.3; ~10% of suppliers have one temporary 4-8 week disruption at 0.5-0.7x. No disruption flag is stored.
 
 | Field | Type | Required | Allowed values | Unit | Unique | Key | Validation rule | Description |
 |---|---|---|---|---|---|---|---|---|

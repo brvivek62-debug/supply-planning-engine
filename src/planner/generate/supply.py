@@ -99,12 +99,19 @@ def expected_sku_load(ctx: Ctx) -> pd.DataFrame:
 
 def gen_supplier_capacity(ctx: Ctx) -> pd.DataFrame:
     """Capacity per week = the supplier's expected (seasonal) load of its primary SKUs in that week
-    x headroom (x weekly noise)."""
+    x headroom (x weekly noise). About `disruption_supplier_share` of loaded suppliers get one temporary
+    disruption window (`disruption_weeks` long) where capacity drops to `disruption_factor` x normal;
+    the window and the disrupted flag are latent (never exported)."""
     rng = ctx.rngs("supplier_capacity")
     sup, ss = ctx["supplier"], ctx["supplier_sku"]
     sc = ctx.cfg["supply"]
     W = ctx.cfg.weeks
     sku_load = expected_sku_load(ctx)
+    # level-correct the latent seasonal curve to the published forecast (NB noise, promo floor and rounding
+    # put realized demand a few % above the latent rate); the seasonal shape is kept
+    real = ctx.aux["mean_demand"].groupby(level="sku_id").sum()
+    lvl = (real.reindex(sku_load.index).fillna(0.0) / sku_load.mean(axis=1).clip(lower=1e-9)).clip(0.5, 2.0)
+    sku_load = sku_load.mul(lvl, axis=0)
     prim = ss[ss["is_primary"] & ss["sku_id"].isin(sku_load.index)]
     wload = sku_load.loc[prim["sku_id"]].set_index(prim["supplier_id"].to_numpy()).groupby(level=0).sum()
     wload = wload.reindex(sup["supplier_id"], fill_value=0.0)
@@ -113,14 +120,38 @@ def gen_supplier_capacity(ctx: Ctx) -> pd.DataFrame:
     shape = np.where(load.to_numpy()[:, None] > 0, shape, 1.0)
     positive = load[load > 0]
     floor_load = float(positive.median()) if len(positive) else 100.0
-    constrained = ctx.aux["constrained"].reindex(sup["supplier_id"]).to_numpy()
     lo_n, hi_n = sc["headroom_normal"]
-    lo_c, hi_c = sc["headroom_constrained"]
-    head = np.where(constrained, rng.uniform(lo_c, hi_c, len(sup)), rng.uniform(lo_n, hi_n, len(sup)))
+    head = rng.uniform(lo_n, hi_n, len(sup))
     base_load = np.where(load.to_numpy() > 0, load.to_numpy(), floor_load * rng.uniform(0.2, 0.6, len(sup)))
     base = base_load * head
     noise = rng.uniform(0.92, 1.08, (len(sup), W))
-    cap = np.maximum(1, np.floor(base[:, None] * shape * noise + 0.5)).astype(np.int64)
+    # temporary disruptions: only suppliers that carry primary load, window fully inside the horizon
+    factor = np.ones((len(sup), W))
+    loaded = np.flatnonzero(load.to_numpy() > 0)
+    n_dis = int(round(len(sup) * float(sc["disruption_supplier_share"])))
+    dlo, dhi = sc["disruption_weeks"]
+    flo, fhi = sc["disruption_factor"]
+    disrupted = np.zeros(len(sup), dtype=bool)
+    # one of the disrupted suppliers is a component supplier (weighted by its primary component count), so
+    # MAKE plants see a component disruption; the rest are drawn from all loaded suppliers
+    is_comp = ctx["sku"].set_index("sku_id")["sku_type"].eq("COMPONENT")
+    ncomp = prim[prim["sku_id"].map(is_comp)].groupby("supplier_id").size().reindex(sup["supplier_id"], fill_value=0)
+    ncomp = ncomp.to_numpy()[loaded].astype(float)
+    picks = []
+    if n_dis > 0 and ncomp.sum() > 0:
+        picks.append(int(rng.choice(loaded, p=ncomp / ncomp.sum())))
+    rest = np.setdiff1d(loaded, picks)
+    picks += rng.choice(rest, size=min(n_dis - len(picks), len(rest)), replace=False).tolist()
+    comp_pick = picks[0] if picks and ncomp.sum() > 0 else -1
+    for k in sorted(picks):
+        dur = int(rng.integers(dlo, dhi + 1))
+        # the component disruption is already under way at the planning run (starts W02-W04, inside most lead
+        # times, so it cannot be pre-built for); others start after W02 and end >= 8 weeks before W52
+        start = int(rng.integers(1, 4)) if k == comp_pick else int(rng.integers(2, W - dur - 8))
+        factor[k, start:start + dur] = rng.uniform(flo, fhi)
+        disrupted[k] = True
+    ctx.aux["disrupted"] = pd.Series(disrupted, index=sup["supplier_id"].to_numpy())   # latent, never exported
+    cap = np.maximum(1, np.floor(base[:, None] * shape * noise * factor + 0.5)).astype(np.int64)
     df = pd.DataFrame({
         "supplier_id": np.repeat(sup["supplier_id"].to_numpy(), W),
         "week": np.tile(cal.week_labels(W), len(sup)),
@@ -140,8 +171,10 @@ def gen_production_capacity(ctx: Ctx) -> pd.DataFrame:
     e = exp[[s in make for s in exp.index.get_level_values("sku_id")]]
     # expected (seasonal) weekly load per plant: MAKE rate x its category season
     cats = sku.set_index("sku_id").loc[e.index.get_level_values("sku_id"), "category"].to_numpy()
-    wl = pd.DataFrame(e.to_numpy()[:, None] * season_factor(ctx, cats) * promo_uplift(ctx),
-                      index=e.index.get_level_values("location_id"))
+    wl = e.to_numpy()[:, None] * season_factor(ctx, cats) * promo_uplift(ctx)
+    real = ctx.aux["mean_demand"].reindex(e.index).fillna(0.0).to_numpy()   # level-correct as for suppliers
+    wl = wl * np.clip(real / np.maximum(wl.mean(axis=1), 1e-9), 0.5, 2.0)[:, None]
+    wl = pd.DataFrame(wl, index=e.index.get_level_values("location_id"))
     wl = wl.groupby(level=0).sum().reindex(plants, fill_value=0.0).to_numpy()
     load = wl.mean(axis=1)
     shape = np.where(load[:, None] > 0, wl / np.maximum(load[:, None], 1e-9), 1.0)

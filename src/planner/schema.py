@@ -411,8 +411,8 @@ SUPPLIER_CAPACITY = Table(
     KIND_INPUT, "supply", core_entity="SupplierCapacity",
     pk=("capacity_id",), natural_key=("supplier_id", "week"),
     fks=(fk("supplier_id", "supplier", label="has"),),
-    notes=("Sized as expected weekly load x headroom: 1.1-1.6 normally, 0.6-0.9 for ~10% of suppliers "
-           "(the constrained ones). No 'constrained' flag is stored.",),
+    notes=("Sized as seasonal expected weekly load (level-corrected to the published forecast) x headroom 1.15-1.3; "
+           "~10% of suppliers have one temporary 4-8 week disruption at 0.5-0.7x. No disruption flag is stored.",),
     fields=(
         _id("capacity_id", "capacity", "Capacity row identifier CAP-nnnnnnn.", pk=True),
         _id("supplier_id", "supplier", "Supplier."),
