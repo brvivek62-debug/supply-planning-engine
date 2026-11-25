@@ -25,11 +25,7 @@ def read_ground_truth(folder: Path) -> pd.DataFrame:
     return tableio.from_text_frame(raw, BY_NAME["ground_truth"])
 
 
-def reports_dir(scale: str, base: Path | None = None) -> Path:
-    default = tableio.data_dir(scale)
-    if base is None or Path(base).resolve() == default.resolve():
-        return project_root() / "reports"
-    return Path(base) / "reports"
+reports_dir = tableio.reports_dir
 
 
 def _related(s) -> set[str]:
@@ -118,7 +114,32 @@ def planning_metrics(t: dict[str, pd.DataFrame], cfg: Config) -> dict:
     non_bo = rec[rec["option_type"] != "BACKORDER"]
     covered = int(non_bo["qty_covered_ea"].sum())
     n = max(len(sh), 1)
+    # shortage-level recovery: requirement (gap to SS) covered, and stockout value recovered on the after-PAB
+    price = sh["sku_id"].map(sku["unit_price_inr"]).to_numpy(dtype=float)
+    rows = np.array([kidx[k] for k in zip(sh["sku_id"], sh["location_id"])], dtype=np.int64)
+    s0 = sh["start_week"].map(cal.week_num).to_numpy() - 1
+    e0 = sh["end_week"].map(cal.week_num).to_numpy() - 1
+    depth_after = np.array([max(0, -int(after[r, a:b + 1].min())) for r, a, b in zip(rows, s0, e0)], dtype=float)
+    var_before = float(sh["value_at_risk_inr"].sum())
+    var_after = float((depth_after * price).sum())
+    req = int(sh["below_ss_qty_ea"].sum())
+    cov_all = int(rec["qty_covered_ea"].sum())
+    short_rows = np.zeros(len(keys), dtype=bool)
+    short_rows[rows] = True
+    sfin = short_rows & fin
     return {
+        "shortage_units_ea": req,
+        "shortage_units_covered_ea": cov_all,
+        "pct_shortage_units_covered": round(100.0 * cov_all / req, 2) if req else 0.0,
+        "stockout_units_ea": int(sh["shortage_qty_ea"].sum()),
+        "stockout_units_after_ea": int(depth_after.sum()),
+        "value_at_risk_inr": round(var_before, 2),
+        "value_at_risk_after_inr": round(var_after, 2),
+        "value_at_risk_recovered_inr": round(var_before - var_after, 2),
+        "pct_value_at_risk_recovered": round(100.0 * (var_before - var_after) / var_before, 2) if var_before else 0.0,
+        "short_sku_locations_finished": int(sfin.sum()),
+        "fill_rate_short_before": round(_fill(closing[sfin], demand[sfin]), 6),
+        "fill_rate_short_after": round(_fill(after[sfin], demand[sfin]), 6),
         "sku_locations": len(keys),
         "total_demand_ea": int(demand[fin].sum()),
         "fill_rate_before": round(_fill(closing[fin], demand[fin]), 6),
@@ -189,8 +210,22 @@ def render(cfg: Config, m: dict, det: pd.DataFrame, bfp: pd.DataFrame, out: pd.D
         f"| Shortages with cause (any) | {_kv(m['shortages_with_cause'])} |",
         f"| Fill rate before mitigation | {m['fill_rate_before']:.4%} |",
         f"| Fill rate after recommended mitigations | {m['fill_rate_after']:.4%} |",
+        f"| Fill rate, only the {m['short_sku_locations_finished']:,} finished SKU-locations with a shortage — before | {m['fill_rate_short_before']:.4%} |",
+        f"| Fill rate, only SKU-locations with a shortage — after recommended mitigations | {m['fill_rate_short_after']:.4%} |",
         "",
-        "Fill rate = 1 - sum(min(demand, backlog)) / sum(demand) per SKU-location-week (backlog semantics).",
+        "Fill rate = 1 - sum(min(demand, backlog)) / sum(demand) per SKU-location-week (backlog semantics), over the",
+        "52-week horizon of finished SKUs. The overall rate is dominated by SKU-locations that are never short; the",
+        "short-only rate shows the effect of the mitigations where it applies.",
+        "",
+        "## Recovery",
+        "",
+        "| Metric | Value |", "|---|---|",
+        f"| Shortage units (sum of below_ss_qty_ea = gap to safety stock) | {m['shortage_units_ea']:,} EA |",
+        f"| Covered by recommended mitigations | {m['shortage_units_covered_ea']:,} EA (**{m['pct_shortage_units_covered']}%**) |",
+        f"| Stockout units (sum of shortage_qty_ea) before -> after | {m['stockout_units_ea']:,} -> {m['stockout_units_after_ea']:,} EA |",
+        f"| Value at risk before | INR {m['value_at_risk_inr']:,.2f} |",
+        f"| Value at risk after (stockout depth left on the post-mitigation balance x unit price) | INR {m['value_at_risk_after_inr']:,.2f} |",
+        f"| **Value at risk recovered** | **INR {m['value_at_risk_recovered_inr']:,.2f} ({m['pct_value_at_risk_recovered']}%)** |",
         "",
         "## Mitigations",
         "",

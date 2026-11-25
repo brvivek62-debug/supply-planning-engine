@@ -1,0 +1,164 @@
+{
+  "boundary": [
+    {
+      "cases": 15,
+      "examples": "",
+      "false_positives": 0,
+      "issue_type": "PO_QTY_EQUALS_MOQ"
+    },
+    {
+      "cases": 15,
+      "examples": "",
+      "false_positives": 0,
+      "issue_type": "RECEIPT_EQUALS_LEAD_TIME"
+    },
+    {
+      "cases": 15,
+      "examples": "",
+      "false_positives": 0,
+      "issue_type": "SUPPLIER_LOAD_EQUALS_CAPACITY"
+    }
+  ],
+  "boundary_false_positives": 0,
+  "detection": [
+    {
+      "action_as_expected": 40,
+      "detected": 40,
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "injected": 40,
+      "issue_type": "DUPLICATE_INBOUND",
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 40
+    },
+    {
+      "action_as_expected": 40,
+      "detected": 40,
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "injected": 40,
+      "issue_type": "UNAPPROVED_SUBSTITUTE",
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 40
+    },
+    {
+      "action_as_expected": 40,
+      "detected": 40,
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "injected": 40,
+      "issue_type": "SUPPLIER_CAPACITY_EXCEEDED",
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 40
+    },
+    {
+      "action_as_expected": 40,
+      "detected": 40,
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "injected": 40,
+      "issue_type": "LEAD_TIME_IGNORED",
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 40
+    },
+    {
+      "action_as_expected": 40,
+      "detected": 40,
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "injected": 40,
+      "issue_type": "UOM_MISMATCH",
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 40
+    }
+  ],
+  "ground_truth_rows": 245,
+  "outcomes_checked": 80,
+  "outcomes_ok": 80,
+  "planning": {
+    "cost_per_covered_ea_inr": 15.72,
+    "covered_ea": 89681,
+    "escalated": 180,
+    "fill_rate_after": 0.997502,
+    "fill_rate_before": 0.997015,
+    "fill_rate_short_after": 0.967905,
+    "fill_rate_short_before": 0.961644,
+    "mitigation_cost_inr": 5528459.72,
+    "mitigation_cost_non_backorder_inr": 1409663.05,
+    "mitigation_options": 11045,
+    "option_violations": 440,
+    "options_by_type": {
+      "ALTERNATE_SUPPLIER": 937,
+      "BACKORDER": 2513,
+      "EXPEDITE_PO": 118,
+      "INCREASE_PRODUCTION": 56,
+      "SUBSTITUTE_SKU": 121,
+      "TRANSFER": 7300
+    },
+    "pct_compliant_non_backorder": 73.14,
+    "pct_fully_covered": 48.15,
+    "pct_shortage_units_covered": 26.2,
+    "pct_sku_locations_short": 11.87,
+    "pct_value_at_risk_recovered": 15.03,
+    "recommended_by_type": {
+      "ALTERNATE_SUPPLIER": 252,
+      "BACKORDER": 675,
+      "EXPEDITE_PO": 20,
+      "INCREASE_PRODUCTION": 53,
+      "SUBSTITUTE_SKU": 30,
+      "TRANSFER": 1483
+    },
+    "recommended_violations": 0,
+    "short_sku_locations_finished": 2138,
+    "shortage_units_covered_ea": 89681,
+    "shortage_units_ea": 342342,
+    "shortages": 2513,
+    "shortages_by_primary_cause": {
+      "COMPONENT_SHORTAGE": 52,
+      "DEMAND_SPIKE": 362,
+      "LEAD_TIME_FENCE": 481,
+      "LOW_OPENING_STOCK": 119,
+      "PO_DELAYED": 197,
+      "PRODUCTION_CAPACITY": 15,
+      "SUPPLIER_CAPACITY": 1287
+    },
+    "shortages_by_type": {
+      "BELOW_SAFETY_STOCK": 1410,
+      "STOCKOUT": 1103
+    },
+    "shortages_with_cause": {
+      "COMPONENT_SHORTAGE": 66,
+      "DEMAND_SPIKE": 897,
+      "LEAD_TIME_FENCE": 1222,
+      "LOW_OPENING_STOCK": 338,
+      "PO_DELAYED": 292,
+      "PRODUCTION_CAPACITY": 28,
+      "SUPPLIER_CAPACITY": 1290
+    },
+    "sku_locations": 19274,
+    "sku_locations_short": 2288,
+    "status_mix": {
+      "BACKORDER_ACCEPTED": 675,
+      "ESCALATED": 180,
+      "MITIGATION_SELECTED": 1658
+    },
+    "stockout_units_after_ea": 124642,
+    "stockout_units_ea": 159824,
+    "total_demand_ea": 73279054,
+    "value_at_risk_after_inr": 61407576.59,
+    "value_at_risk_inr": 72267712.25,
+    "value_at_risk_recovered_inr": 10860135.66
+  },
+  "scale": "full",
+  "seed": 20261022
+}

@@ -1,0 +1,193 @@
+{
+  "scale": "full",
+  "seed": 20261022,
+  "package_version": "0.1.0",
+  "generator_command": "python -m planner generate --scale full --seed 20261022",
+  "pipeline_command": "python -m planner run-all --scale full --seed 20261022",
+  "as_of_date": "2025-12-29",
+  "provenance": "All data in this repository is synthetic, produced by `python -m planner generate` from a fixed seed. No external datasets were used. Public knowledge (Indian city names, standard transport modes, ISO weeks) was used only for realism. Code license: MIT (see LICENSE).",
+  "files": [
+    {
+      "path": "data/full/csv/bom.csv.gz",
+      "rows": 780,
+      "bytes": 7830,
+      "sha256": "319d6c042e3f3266b977565a214c3906afa9ddded14331623522dd13c836fba3",
+      "over_50mb": false
+    },
+    {
+      "path": "data/full/csv/exception.csv.gz",
+      "rows": 200,
+      "bytes": 5995,
+      "sha256": "b55e17db7edecb8ceeeabe444a0c2866913cd1f696292c84e355d7db7a03321e",
+      "over_50mb": false
+    },
+    {
+      "path": "data/full/csv/forecast_demand.csv.gz",
+      "rows": 966524,
+      "bytes": 8829658,
+      "sha256": "3730866c170b30a33d7b6c057df230eae0b4199863792fbbb39cdb0ed12d0600",
+      "over_50mb": false
+    },
+    {
+      "path": "data/full/csv/inventory.csv.gz",
+      "rows": 24079,
+      "bytes": 210126,
+      "sha256": "fb72d6373d6fac56138b0c897dbf680ce0a88cb58e7a4aa2e2a0a0645889adaa",
+      "over_50mb": false
+    },
+    {
+      "path": "data/full/csv/inventory_txn.csv.gz",
+      "rows": 41540,
+      "bytes": 363992,
+      "sha256": "3cf8e6e72c76df2b389cce423dd6cb06069b5f23896e3b5d9d63e0e00dc5582c",
+      "over_50mb": false
+    },
+    {
+      "path": "data/full/csv/lead_time.csv.gz",
+      "rows": 5139,
+      "bytes": 39394,
+      "sha256": "db13377bc7cf1923148bde777c086f8660e0c09059683e558a1391fc99798c0b",
+      "over_50mb": false
+    },
+    {
+      "path": "data/full/csv/location.csv.gz",
+      "rows": 50,
+      "bytes": 887,
+      "sha256": "1dd4dce529aad4cbc17f64b20c1c6f911d1f234f2fb0b3a48bdfd4a11e6ac4fe",
+      "over_50mb": false
+    },
+    {
+      "path": "data/full/csv/mitigation_ledger.csv.gz",
+      "rows": 6570,
+      "bytes": 54219,
+      "sha256": "e12df11c93813595bba8f38b2de29e27f6e470703955cdf8df443b37a58124c0",
+      "over_50mb": false
+    },
+    {
+      "path": "data/full/csv/mitigation_option.csv.gz",
+      "rows": 11045,
+      "bytes": 210751,
+      "sha256": "bb310bba3c00df6fbb349f6c5efd36e95ca1247cead57ee208f1eb7282977024",
+      "over_50mb": false
+    },
+    {
+      "path": "data/full/csv/mitigation_proposal.csv.gz",
+      "rows": 40,
+      "bytes": 703,
+      "sha256": "47fb109f200b8a56b6b93ea32f087832bb7082152f762cab74dfd825d96a7f5d",
+      "over_50mb": false
+    },
+    {
+      "path": "data/full/csv/planned_order.csv.gz",
+      "rows": 171802,
+      "bytes": 3305603,
+      "sha256": "4fd5a57d9021ee30ee6c727af55584d4457568d4750af1961bdf787a8b231c4b",
+      "over_50mb": false
+    },
+    {
+      "path": "data/full/csv/production_capacity.csv.gz",
+      "rows": 260,
+      "bytes": 1376,
+      "sha256": "eab3397fa0715fbbc44c8cb126990bdf0046feb2d9b32e83ae0c2462838eb276",
+      "over_50mb": false
+    },
+    {
+      "path": "data/full/csv/production_plan.csv.gz",
+      "rows": 12173,
+      "bytes": 117416,
+      "sha256": "30d483e46a83a2e9e593dd8c567ae3abbf085f3e987d6174fa7b6f38454d9926",
+      "over_50mb": false
+    },
+    {
+      "path": "data/full/csv/projected_balance.csv.gz",
+      "rows": 1002248,
+      "bytes": 8046753,
+      "sha256": "db45dd8c3deb7470d4d1f2b0b184994364672532b73662d7ae982dcdfac07467",
+      "over_50mb": false
+    },
+    {
+      "path": "data/full/csv/purchase_order.csv.gz",
+      "rows": 10040,
+      "bytes": 210728,
+      "sha256": "9431efc09378592a1062223f4e58d4ca25eaab3253faee0c14d8b1300f979fd5",
+      "over_50mb": false
+    },
+    {
+      "path": "data/full/csv/purchase_order_event.csv.gz",
+      "rows": 35972,
+      "bytes": 384284,
+      "sha256": "430f870b0b414379bed40aa073735a7afc4b472d357ff90bceb62a8c4535b6f6",
+      "over_50mb": false
+    },
+    {
+      "path": "data/full/csv/shortage.csv.gz",
+      "rows": 2513,
+      "bytes": 132848,
+      "sha256": "8edf4cc0f5de4e77591fab599354ee030876cada02d5f06ed52fe44b2f9f74eb",
+      "over_50mb": false
+    },
+    {
+      "path": "data/full/csv/shortage_cause.csv.gz",
+      "rows": 5421,
+      "bytes": 44661,
+      "sha256": "4ce19fdfe46a89fd917a567ab823c4973bb25a55b13c973229ee922a3462dfd7",
+      "over_50mb": false
+    },
+    {
+      "path": "data/full/csv/shortage_event.csv.gz",
+      "rows": 7539,
+      "bytes": 51156,
+      "sha256": "a231a9f3aad1b34069324bd10dbcf4e1fb1341d571fe8a654f2d776f3c6bbd8e",
+      "over_50mb": false
+    },
+    {
+      "path": "data/full/csv/sku.csv.gz",
+      "rows": 3000,
+      "bytes": 64229,
+      "sha256": "c90e6bac2d304002c68b347c72de2f8469680fff0e18af27a9b148f1e341879c",
+      "over_50mb": false
+    },
+    {
+      "path": "data/full/csv/sku_location.csv.gz",
+      "rows": 19274,
+      "bytes": 113038,
+      "sha256": "55c06d388f0d22392979858294edb36e30d8bb22e40842c9bcec64bdea21d403",
+      "over_50mb": false
+    },
+    {
+      "path": "data/full/csv/sku_substitute.csv.gz",
+      "rows": 479,
+      "bytes": 8284,
+      "sha256": "afaa9386da3a48ad5461e06708a9a5a45e3c7993cd1543ade464286280c005fb",
+      "over_50mb": false
+    },
+    {
+      "path": "data/full/csv/supplier.csv.gz",
+      "rows": 500,
+      "bytes": 7386,
+      "sha256": "2013ee697288d04038688f85d2f75348401f86a14ce837f9d38d80d096b643d2",
+      "over_50mb": false
+    },
+    {
+      "path": "data/full/csv/supplier_capacity.csv.gz",
+      "rows": 26000,
+      "bytes": 189823,
+      "sha256": "f9087a7e10f07b85d3b2d4d599c6622eeb6d37a8fb8e34e881be74e8cab5a367",
+      "over_50mb": false
+    },
+    {
+      "path": "data/full/csv/supplier_sku.csv.gz",
+      "rows": 4799,
+      "bytes": 77720,
+      "sha256": "79e6526f395e562a1b4dda6ceef1d2955cc89ab0c2bdeefadcbd7dcdca38784d",
+      "over_50mb": false
+    },
+    {
+      "path": "ground_truth/full/ground_truth.csv",
+      "rows": 245,
+      "bytes": 79484,
+      "sha256": "228e23448c6c8a7dea188e1c3da4a2402a1fd9f313b31bbccec944d11d8f59de",
+      "over_50mb": false
+    }
+  ]
+}

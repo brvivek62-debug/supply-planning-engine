@@ -24,6 +24,7 @@ class CheckResult:
     failures: int
     detail: str = ""
     examples: list[str] = field(default_factory=list)
+    keys: list[str] = field(default_factory=list, repr=False)   # every failing record key ("/"-joined)
 
     @property
     def status(self) -> str:
@@ -38,11 +39,11 @@ class CheckResult:
 def _result(check: str, table: str, n: int, bad: pd.Series | np.ndarray, df: pd.DataFrame | None = None,
             key: list[str] | None = None, detail: str = "") -> CheckResult:
     bad = np.asarray(bad, dtype=bool)
-    ex: list[str] = []
+    keys: list[str] = []
     if df is not None and bad.any():
         cols = key or [c for c in df.columns[:1]]
-        ex = ["/".join(str(v) for v in row) for row in df.loc[bad, cols].head(5).itertuples(index=False)]
-    return CheckResult(check, table, n, int(bad.sum()), detail, ex)
+        keys = ["/".join(str(v) for v in row) for row in df.loc[bad, cols].itertuples(index=False)]
+    return CheckResult(check, table, n, int(bad.sum()), detail, keys[:5], keys)
 
 
 def _blank(s: pd.Series) -> pd.Series:
@@ -307,13 +308,14 @@ def check_in_transit(tables) -> CheckResult:
     inv, po = tables["inventory"], tables["purchase_order"]
     it = inv[inv["inventory_status"] == "IN_TRANSIT"]
     shipped = po[po["status"].isin(["SHIPPED", "IN_TRANSIT", "DELAYED"])].set_index("po_id")
-    idx = shipped.index.union(pd.Index(it["po_id"].dropna()))
+    idx = shipped.index.union(pd.Index(it["po_id"].dropna().unique()))
     cnt = it["po_id"].value_counts().reindex(idx, fill_value=0)
     q = it.groupby("po_id")["qty_ea"].sum().reindex(idx)
     bad = (cnt != 1) | (q != shipped["qty_base_ea"].reindex(idx)) | ~idx.isin(shipped.index)
     bad_on_hand = (inv["inventory_status"] == "ON_HAND") & ~_blank(inv["po_id"])
+    keyed = pd.DataFrame({"key": list(idx) + list(inv["inventory_id"])})
     return _result("in_transit_mirrors_open_pos", "inventory", len(idx) + len(inv), np.concatenate([bad.to_numpy(), bad_on_hand.to_numpy()]),
-                   None, None, "exactly one IN_TRANSIT row per SHIPPED/IN_TRANSIT/DELAYED PO with its qty; no po_id on ON_HAND")
+                   keyed, ["key"], "exactly one IN_TRANSIT row per SHIPPED/IN_TRANSIT/DELAYED PO with its qty; no po_id on ON_HAND")
 
 
 def check_lead_time(tables) -> list[CheckResult]:

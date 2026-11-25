@@ -9,13 +9,6 @@ from planner import DEFAULT_SEED, __version__
 from planner.config import SCALES, load_config
 
 
-def _not_yet(name: str, phase: int) -> Callable[[argparse.Namespace], int]:
-    def run(args: argparse.Namespace) -> int:
-        print(f"[planner] '{name}' is implemented in Phase {phase}; not available yet.")
-        return 2
-    return run
-
-
 def cmd_generate(args: argparse.Namespace) -> int:
     from pathlib import Path
 
@@ -60,6 +53,53 @@ def cmd_evaluate(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_validate(args: argparse.Namespace) -> int:
+    from pathlib import Path
+
+    from planner.validate import report
+    cfg = load_config(args.scale)
+    s = report.run(cfg, Path(args.data) if args.data else None)["summary"]
+    print(f"[planner] validated scale={cfg.scale} in {s['seconds']} s: {s['checks']} checks, {s['passed']} PASS, "
+          f"{s['expected_fail_checks']} EXPECTED_FAIL ({s['expected_failures']} expected failures), "
+          f"{s['failed_checks']} FAIL, unexpected failures {s['unexpected_failures']}")
+    return 0 if s["unexpected_failures"] == 0 else 1
+
+
+def cmd_export(args: argparse.Namespace) -> int:
+    from pathlib import Path
+
+    from planner import export, profile
+    cfg = load_config(args.scale)
+    base = Path(args.data) if args.data else None
+    r = export.run(cfg, base)
+    p = profile.run(cfg, base)
+    print(f"[planner] exported scale={cfg.scale}: {len(r['written'])} JSON/SQL files, manifest {r['manifest']}, profile {p}")
+    return 0
+
+
+def cmd_repro(args: argparse.Namespace) -> int:
+    from planner import repro
+    cfg = load_config(args.scale, args.seed)
+    r = repro.run(cfg)
+    print(f"[planner] repro-check scale={cfg.scale} seed={cfg.seed} in {r['seconds']} s: "
+          f"{'IDENTICAL' if r['identical'] else 'MISMATCH'} over {r['files']} files; seed {r['other_seed']} changes "
+          f"{r['files_changed_by_other_seed']} of them")
+    return 0 if r["identical"] and r["files_changed_by_other_seed"] > 0 else 1
+
+
+def cmd_run_all(args: argparse.Namespace) -> int:
+    import time
+    t0 = time.perf_counter()
+    rc = 0
+    for name, fn in (("generate", cmd_generate), ("plan", cmd_plan), ("validate", cmd_validate),
+                     ("evaluate", cmd_evaluate), ("export", cmd_export), ("repro-check", cmd_repro)):
+        t1 = time.perf_counter()
+        rc |= fn(args)
+        print(f"[planner] {name} done in {time.perf_counter() - t1:.1f} s")
+    print(f"[planner] run-all scale={args.scale} finished in {time.perf_counter() - t0:.1f} s (exit {rc})")
+    return rc
+
+
 def cmd_docs(args: argparse.Namespace) -> int:
     from planner.docs_gen import write_all
     for path in write_all():
@@ -71,12 +111,12 @@ COMMANDS: dict[str, tuple[str, Callable[[argparse.Namespace], int], bool, bool]]
     # name: (help, handler, takes --scale, takes --seed)
     "generate": ("Generate baseline data, inject labelled cases, write ground truth", cmd_generate, True, True),
     "plan": ("Quality gate, PAB, planned orders, shortages, mitigations, decisions", cmd_plan, True, False),
-    "validate": ("Run all checks -> reports/validation_summary.{md,json}", _not_yet("validate", 6), True, False),
+    "validate": ("Run all checks -> reports/validation_summary.{md,json}", cmd_validate, True, False),
     "evaluate": ("Metrics and detection precision/recall vs ground truth", cmd_evaluate, True, False),
-    "export": ("CSV/JSON/SQL exports, manifest and checksums", _not_yet("export", 6), True, False),
-    "repro-check": ("Run twice into temp dirs and compare row counts + SHA-256", _not_yet("repro-check", 6), True, True),
+    "export": ("CSV/JSON/SQL exports, manifest and checksums", cmd_export, True, False),
+    "repro-check": ("Run twice into temp dirs and compare row counts + SHA-256", cmd_repro, True, True),
     "docs": ("Generate data dictionary, sql/schema.sql and ERD from schema.py", cmd_docs, False, False),
-    "run-all": ("Run every step above in order", _not_yet("run-all", 6), True, True),
+    "run-all": ("Run every step above in order", cmd_run_all, True, True),
 }
 
 
@@ -90,9 +130,11 @@ def build_parser() -> argparse.ArgumentParser:
             sp.add_argument("--scale", choices=SCALES, default="starter")
         if seed:
             sp.add_argument("--seed", type=int, default=DEFAULT_SEED)
+        if name == "run-all":
+            sp.set_defaults(out=None, data=None)
         if name == "generate":
             sp.add_argument("--out", default=None, help="output directory (default data/<scale>)")
-        if name in ("plan", "evaluate"):
+        if name in ("plan", "evaluate", "validate", "export"):
             sp.add_argument("--data", default=None, help="data directory (default data/<scale>)")
         sp.set_defaults(func=handler)
     return p

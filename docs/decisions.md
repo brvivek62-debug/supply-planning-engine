@@ -115,3 +115,16 @@ One line each: decision — reason.
 - Ground truth goes to `ground_truth/<scale>/` for the default data folder, `<out>/ground_truth/` for a custom `--out` (tests use temp folders).
 - Test fixtures: `baseline` (inject=False) for input-generator and gate unit tests, `generated` (full pipeline) for planning, decisions and evaluation — gate unit tests need a clean baseline to assert exact exception lists.
 - `reports/test_results.txt` is written with `pytest -o addopts="" -q` — `addopts = -q` plus `-q` hides the pass-count line.
+
+## Phase 6
+- Expected vs unexpected failures: a failing record counts as expected only if the planner's own `exception` table names it under the issue type that explains that check (po_qty_uom_moq <- UOM_MISMATCH; po_receipt_week_arithmetic <- LEAD_TIME_IGNORED; firm_po_within_supplier_capacity <- SUPPLIER_CAPACITY_EXCEEDED via capacity_id; in_transit_mirrors_open_pos <- DUPLICATE_INBOUND or UOM_MISMATCH). Validation never reads ground truth, and an unkeyed or un-named failure is always unexpected.
+- in_transit_mirrors_open_pos also fails for UOM_MISMATCH POs: their correct IN_TRANSIT row no longer equals the corrupted raw qty_base_ea, so that issue type explains it as well.
+- Fixed in_transit_mirrors_open_pos counting a duplicated PO twice (Index.union keeps duplicates).
+- The SQLite check loads every data table into an in-memory DB built from sql/schema.sql, with `PRAGMA foreign_keys = ON` (and CHECK constraints) at both scales, then runs `PRAGMA foreign_key_check`.
+- Reports: starter writes to `reports/`, full to `reports/full/` (and other scales to `reports/<scale>/`), so a full run never overwrites the starter reports.
+- JSON and seed.sql are exported for test/starter only. Full scale ships `csv.gz` and its manifest, because full JSON/SQL would exceed the 50 MB file limit and add nothing.
+- seed.sql values are copied from the deterministic CSV text (booleans as 1/0), with 500 rows per INSERT in one transaction, so it is byte-stable.
+- repro-check runs generate + plan twice with the seed and once with seed + 1 into temporary folders, comparing every CSV and the ground truth (run_info.json excluded).
+- New metrics. Shortage units = sum(below_ss_qty_ea), the mitigation requirement, and the covered share = sum(recommended qty_covered_ea) / that. VaR recovered = VaR before - sum(unit price x stockout depth left in the run on the post-mitigation balance). The short-only fill rate is computed over finished SKU-locations with >= 1 shortage across all 52 weeks.
+- run-all = generate -> plan -> validate -> evaluate -> export (+ data profile) -> repro-check; it exits non-zero on any unexpected failure or repro mismatch.
+- supplier_sku: an expiring alternate line now ends >= 4 weeks after its effective_from (lower bound max(2026-03-31, effective_from + 28 d)). Full scale had 2 lines that became effective in 2026 with an earlier effective_to; the draw count is unchanged, so no other table shifts.

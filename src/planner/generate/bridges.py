@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import math
-from datetime import date
+from datetime import date, timedelta
 
 import numpy as np
 import pandas as pd
@@ -137,7 +137,9 @@ def gen_supplier_sku(ctx: Ctx) -> pd.DataFrame:
                     ef = rand_dates(rng, date(2026, 1, 15), date(2026, 6, 30), 1)[0]
                 else:
                     ef = rand_dates(rng, date(2023, 1, 1), date(2025, 6, 30), 1)[0]
-                et = rand_dates(rng, date(2026, 3, 31), date(2026, 9, 30), 1)[0] if rng.random() < 0.08 else None
+                # an expiring line ends 2026-03-31..09-30 and at least 4 weeks after it became effective
+                et_lo = max(date(2026, 3, 31), date.fromisoformat(ef) + timedelta(days=28))
+                et = rand_dates(rng, et_lo, date(2026, 9, 30), 1)[0] if rng.random() < 0.08 else None
             rows.append(dict(supplier_id=sid, sku_id=s, is_primary=primary, approval_status=approval,
                              unit_cost_inr=round(float(unit_cost), 2), purchase_uom=uom, uom_conversion=conv,
                              moq=int(moq), order_multiple=int(om), effective_from=ef, effective_to=et))

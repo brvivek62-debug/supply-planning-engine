@@ -9,8 +9,8 @@
 | 3 | Planning | ✅ done (test + starter) |
 | 4 | Mitigations | ✅ done (test + starter) |
 | 5 | Edge cases & ground truth | ✅ done (test + starter) |
-| 6 | Validate, export, repro, full scale | ⏳ next |
-| 7 | README & polish | — |
+| 6 | Validate, export, repro, full scale | ✅ done (starter + full) |
+| 7 | README & polish | ⏳ next |
 
 ## Phase 0 — done
 - `pyproject.toml` (src layout), `pip install -e ".[dev]"` works.
@@ -55,12 +55,22 @@
 - All plan checks, generic PK/FK/enum/ID checks and the mitigation ledger pass on the injected data; raw input domain checks fail only on the injected records (po_qty_uom_moq, po_receipt_week_arithmetic, firm_po_within_supplier_capacity, in_transit_mirrors_open_pos) — Phase 6 reports those as expected failures.
 - Tests: 133 passing (adds tests/test_inject_evaluate.py: label counts, recall/precision 1.0, action as expected, 0 boundary FP, outcomes, only targeted records change, only expected raw checks fail, outputs valid on injected data, MANUAL proposals are VIOLATIONs, ground-truth isolation). Output in `reports/test_results.txt`.
 
+## Phase 6 — done (starter + full)
+- New CLI commands: `validate`, `export`, `repro-check`, `run-all`. New modules: `validate/report.py`, `sqlio.py`, `export.py`, `manifest.py`, `repro.py`, `profile.py`. `reports_dir` moved to `tableio` (starter -> `reports/`, full -> `reports/full/`).
+- Validation: 243 checks (schema, input domain, planner outputs, SQLite FK load). A failure is EXPECTED only when the planner's `exception` table names the failing record under the explaining issue type. Starter: 239 PASS, 4 EXPECTED_FAIL (44 records), 0 unexpected. Full: 239 PASS, 4 EXPECTED_FAIL (188 records), 0 unexpected.
+- Fixes: in_transit check double-counted duplicated POs; supplier_sku could expire before it became effective (2 rows at full).
+- Exports: starter JSON + `sql/seed.sql` (loads in SQLite, FK check clean); `manifest.json` per scale; `docs/source_manifest.md`. Full ships `csv.gz` only. Largest committed file 20.7 MB (`data/starter/json/projected_balance.json`).
+- repro-check: same seed gives 26/26 files byte-identical, and seed + 1 changes 26/26 (starter and full).
+- Full scale: 3,000 SKUs / 50 locations / 52 weeks / 500 suppliers / 10,040 POs (10,000 + 40 injected), 19,274 SKU-locations, 966,524 demand rows. `run-all` takes 271 s (generate 46 s, plan 15 s, validate 19 s, repro 187 s). 11.87% of SKU-locations short, 2,513 shortages. Detection precision = recall = 1.0 for all 5 types (40 each), 0 boundary FP.
+- New metrics. Starter: 51.5% of shortage units covered; VaR recovered INR 404,460 (86.2%); short-only fill rate 99.72% -> 99.87%. Full: 26.2% covered; VaR recovered INR 10,860,136 (15.0%); short-only fill rate 96.16% -> 96.79%.
+- Tests: 140 passing (adds tests/test_phase6.py).
+
 ## Next
-- Phase 6: full validation suite (`validate` -> reports/validation_summary.{md,json} with expected vs unexpected failures, SQLite FK check), exports (CSV/JSON/SQL seed), manifest + checksums, repro-check, data profile + figures; then full scale.
+- Phase 7: README (all sections + requirement -> evidence checklist), docs/business_rules.md, fresh-clone test.
 
 ## Open issues
 - Remaining backorders are mostly W01-W03 shortages inside the lead-time fence and MAKE shortages without spare plant capacity before the run end.
 - One recommended option per shortage; combinations (two transfers) are not proposed.
 - Headroom is 1.15-1.3, above the requested 1.0-1.15 (see Phase 3 decisions).
 - At starter the PO_QTY_EQUALS_MOQ picks are POs already at MOQ (label-only, stated in the label).
-- Full scale not run yet (Phase 6); `generate` now plans twice in memory (about 4 s at starter).
+- Full-scale mitigation recovery is much lower than starter (26% of units, 15% of VaR): most full-scale VaR sits in W01-W03 lead-time-fence and supplier-capacity shortages that no option can reach in time. `generate` plans twice in memory.

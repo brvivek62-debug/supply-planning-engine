@@ -1,0 +1,244 @@
+{
+  "scale": "starter",
+  "seed": 20261022,
+  "other_seed": 20261023,
+  "files": 26,
+  "identical": true,
+  "files_changed_by_other_seed": 26,
+  "rows": [
+    {
+      "file": "csv/bom.csv",
+      "rows_1": 72,
+      "rows_2": 72,
+      "sha_1": "747a1bb553800d0e7406a753dd2ff6ce6ab671e4dd1f6ac7c45d82aa759681b8",
+      "sha_2": "747a1bb553800d0e7406a753dd2ff6ce6ab671e4dd1f6ac7c45d82aa759681b8",
+      "match": true,
+      "differs_other_seed": true
+    },
+    {
+      "file": "csv/exception.csv",
+      "rows_1": 50,
+      "rows_2": 50,
+      "sha_1": "a7ac387537d30fb49a5ece90aa915975d96e9d4db0824797ae32f3cad9984136",
+      "sha_2": "a7ac387537d30fb49a5ece90aa915975d96e9d4db0824797ae32f3cad9984136",
+      "match": true,
+      "differs_other_seed": true
+    },
+    {
+      "file": "csv/forecast_demand.csv",
+      "rows_1": 89544,
+      "rows_2": 89544,
+      "sha_1": "be401a959f20133d7c067cb3cf210392ba2c6b4ced79f466291f9da0449d5f79",
+      "sha_2": "be401a959f20133d7c067cb3cf210392ba2c6b4ced79f466291f9da0449d5f79",
+      "match": true,
+      "differs_other_seed": true
+    },
+    {
+      "file": "csv/inventory.csv",
+      "rows_1": 2245,
+      "rows_2": 2245,
+      "sha_1": "11bd9858cfdedf905ca2ff2cb0954a2c82defb3275463f577c395ca64489ec99",
+      "sha_2": "11bd9858cfdedf905ca2ff2cb0954a2c82defb3275463f577c395ca64489ec99",
+      "match": true,
+      "differs_other_seed": true
+    },
+    {
+      "file": "csv/inventory_txn.csv",
+      "rows_1": 3839,
+      "rows_2": 3839,
+      "sha_1": "e4b03c28e929757d22df3a6d3f4fc1e570d0fb51cd01dfbb8476227c12310b5e",
+      "sha_2": "e4b03c28e929757d22df3a6d3f4fc1e570d0fb51cd01dfbb8476227c12310b5e",
+      "match": true,
+      "differs_other_seed": true
+    },
+    {
+      "file": "csv/lead_time.csv",
+      "rows_1": 513,
+      "rows_2": 513,
+      "sha_1": "fb4a43ac4a59fe097d26f5c525cab69739096891c4e46014a8682b9a86b799e0",
+      "sha_2": "fb4a43ac4a59fe097d26f5c525cab69739096891c4e46014a8682b9a86b799e0",
+      "match": true,
+      "differs_other_seed": true
+    },
+    {
+      "file": "csv/location.csv",
+      "rows_1": 10,
+      "rows_2": 10,
+      "sha_1": "3cc45a3b4dfa0360bf5cf9c74ad44995c9fa1c46f1412f309d8f46795d832000",
+      "sha_2": "3cc45a3b4dfa0360bf5cf9c74ad44995c9fa1c46f1412f309d8f46795d832000",
+      "match": true,
+      "differs_other_seed": true
+    },
+    {
+      "file": "csv/mitigation_ledger.csv",
+      "rows_1": 928,
+      "rows_2": 928,
+      "sha_1": "a033a52aaf648329a90bc19d0a35d608a502427748fe3c3807f650ceeabe2c80",
+      "sha_2": "a033a52aaf648329a90bc19d0a35d608a502427748fe3c3807f650ceeabe2c80",
+      "match": true,
+      "differs_other_seed": true
+    },
+    {
+      "file": "csv/mitigation_option.csv",
+      "rows_1": 973,
+      "rows_2": 973,
+      "sha_1": "53c4219332573efe5f382af9ca5b3bf69179d1fa40a2784173609e433b1a7a40",
+      "sha_2": "53c4219332573efe5f382af9ca5b3bf69179d1fa40a2784173609e433b1a7a40",
+      "match": true,
+      "differs_other_seed": true
+    },
+    {
+      "file": "csv/mitigation_proposal.csv",
+      "rows_1": 10,
+      "rows_2": 10,
+      "sha_1": "9074cba7ea550f92793158f0eac081effb51c4d372b70bb6c2fbd62378a73b2c",
+      "sha_2": "9074cba7ea550f92793158f0eac081effb51c4d372b70bb6c2fbd62378a73b2c",
+      "match": true,
+      "differs_other_seed": true
+    },
+    {
+      "file": "csv/planned_order.csv",
+      "rows_1": 15907,
+      "rows_2": 15907,
+      "sha_1": "546a86489371bc8849ca142e0d421f2abcfffecf9b3bd8e6be688580d53ac306",
+      "sha_2": "546a86489371bc8849ca142e0d421f2abcfffecf9b3bd8e6be688580d53ac306",
+      "match": true,
+      "differs_other_seed": true
+    },
+    {
+      "file": "csv/production_capacity.csv",
+      "rows_1": 104,
+      "rows_2": 104,
+      "sha_1": "b01f86f14022896867d26b50ccadb2fe02b803c85b49963f22930eee3f697b04",
+      "sha_2": "b01f86f14022896867d26b50ccadb2fe02b803c85b49963f22930eee3f697b04",
+      "match": true,
+      "differs_other_seed": true
+    },
+    {
+      "file": "csv/production_plan.csv",
+      "rows_1": 1263,
+      "rows_2": 1263,
+      "sha_1": "0e0dcbfb1c3ef7fcb669e34cdfe807c3044567c766132438f5161ad8c5d2a60d",
+      "sha_2": "0e0dcbfb1c3ef7fcb669e34cdfe807c3044567c766132438f5161ad8c5d2a60d",
+      "match": true,
+      "differs_other_seed": true
+    },
+    {
+      "file": "csv/projected_balance.csv",
+      "rows_1": 92404,
+      "rows_2": 92404,
+      "sha_1": "f98ebaa93ed97c48e00a49872200f9b1d1b111225f875a5c7cb1f7a6401e58ab",
+      "sha_2": "f98ebaa93ed97c48e00a49872200f9b1d1b111225f875a5c7cb1f7a6401e58ab",
+      "match": true,
+      "differs_other_seed": true
+    },
+    {
+      "file": "csv/purchase_order.csv",
+      "rows_1": 1010,
+      "rows_2": 1010,
+      "sha_1": "305ea6f1af65e3a1bfdeec44ff7ab3a93d7c0ba2801e32ea4598f8f052871466",
+      "sha_2": "305ea6f1af65e3a1bfdeec44ff7ab3a93d7c0ba2801e32ea4598f8f052871466",
+      "match": true,
+      "differs_other_seed": true
+    },
+    {
+      "file": "csv/purchase_order_event.csv",
+      "rows_1": 3558,
+      "rows_2": 3558,
+      "sha_1": "c1f16edd5d3f88b3d46973aeb109c2262978b4f0081be1b2bfc11c85afb422dc",
+      "sha_2": "c1f16edd5d3f88b3d46973aeb109c2262978b4f0081be1b2bfc11c85afb422dc",
+      "match": true,
+      "differs_other_seed": true
+    },
+    {
+      "file": "csv/shortage.csv",
+      "rows_1": 233,
+      "rows_2": 233,
+      "sha_1": "50b69eede16ffafde8e1d5c7e6d6b8fcb3aecdd343cb702ea52011091e3cad00",
+      "sha_2": "50b69eede16ffafde8e1d5c7e6d6b8fcb3aecdd343cb702ea52011091e3cad00",
+      "match": true,
+      "differs_other_seed": true
+    },
+    {
+      "file": "csv/shortage_cause.csv",
+      "rows_1": 446,
+      "rows_2": 446,
+      "sha_1": "31cbb908e721f0c62a05c20d4fa08d55b4f4ac8304b794f2d9bed571557495b4",
+      "sha_2": "31cbb908e721f0c62a05c20d4fa08d55b4f4ac8304b794f2d9bed571557495b4",
+      "match": true,
+      "differs_other_seed": true
+    },
+    {
+      "file": "csv/shortage_event.csv",
+      "rows_1": 699,
+      "rows_2": 699,
+      "sha_1": "6b92782f88be0eeb584ffdc27ae049ad450cfc9609e8679f12711a67037e9032",
+      "sha_2": "6b92782f88be0eeb584ffdc27ae049ad450cfc9609e8679f12711a67037e9032",
+      "match": true,
+      "differs_other_seed": true
+    },
+    {
+      "file": "csv/sku.csv",
+      "rows_1": 300,
+      "rows_2": 300,
+      "sha_1": "d55eb5871c11fc8c0734ec3a1cb9cda45fb1148ae5f4e14598224d582f8d6f57",
+      "sha_2": "d55eb5871c11fc8c0734ec3a1cb9cda45fb1148ae5f4e14598224d582f8d6f57",
+      "match": true,
+      "differs_other_seed": true
+    },
+    {
+      "file": "csv/sku_location.csv",
+      "rows_1": 1777,
+      "rows_2": 1777,
+      "sha_1": "e515442e35b45f184eb9868407e0d647bfa93005a8ca5e3ca0ef5f47c4e0866e",
+      "sha_2": "e515442e35b45f184eb9868407e0d647bfa93005a8ca5e3ca0ef5f47c4e0866e",
+      "match": true,
+      "differs_other_seed": true
+    },
+    {
+      "file": "csv/sku_substitute.csv",
+      "rows_1": 48,
+      "rows_2": 48,
+      "sha_1": "21f5731a9effdcf6e6e9cbb6de619ab65a69f686dd5b8c05fc63a43d50088355",
+      "sha_2": "21f5731a9effdcf6e6e9cbb6de619ab65a69f686dd5b8c05fc63a43d50088355",
+      "match": true,
+      "differs_other_seed": true
+    },
+    {
+      "file": "csv/supplier.csv",
+      "rows_1": 50,
+      "rows_2": 50,
+      "sha_1": "790487265bc92cb5fecca539ae16a5b53272a528be9c8bbaa4f795b09c527349",
+      "sha_2": "790487265bc92cb5fecca539ae16a5b53272a528be9c8bbaa4f795b09c527349",
+      "match": true,
+      "differs_other_seed": true
+    },
+    {
+      "file": "csv/supplier_capacity.csv",
+      "rows_1": 2600,
+      "rows_2": 2600,
+      "sha_1": "b3b83888773cbdb7e19a1d7f1bfbac84558ffa1bce0d158286e09239c4b78ae2",
+      "sha_2": "b3b83888773cbdb7e19a1d7f1bfbac84558ffa1bce0d158286e09239c4b78ae2",
+      "match": true,
+      "differs_other_seed": true
+    },
+    {
+      "file": "csv/supplier_sku.csv",
+      "rows_1": 483,
+      "rows_2": 483,
+      "sha_1": "bb367dab6537c19c74b6ee19fc5197346d5358592b32cc8147225d49860cfde0",
+      "sha_2": "bb367dab6537c19c74b6ee19fc5197346d5358592b32cc8147225d49860cfde0",
+      "match": true,
+      "differs_other_seed": true
+    },
+    {
+      "file": "ground_truth/ground_truth.csv",
+      "rows_1": 65,
+      "rows_2": 65,
+      "sha_1": "8ba5bec64951dc872010628455a1d5ebe894aa1361eb742e4157a824c858a99c",
+      "sha_2": "8ba5bec64951dc872010628455a1d5ebe894aa1361eb742e4157a824c858a99c",
+      "match": true,
+      "differs_other_seed": true
+    }
+  ]
+}

@@ -20,6 +20,14 @@ def data_dir(scale: str, root: Path | None = None) -> Path:
     return (root or project_root()) / "data" / scale
 
 
+def reports_dir(scale: str, base: Path | None = None) -> Path:
+    """``reports/`` for the starter scale, ``reports/<scale>/`` for others, ``<base>/reports`` for a custom data dir."""
+    if base is None or Path(base).resolve() == data_dir(scale).resolve():
+        root = project_root() / "reports"
+        return root if scale == "starter" else root / scale
+    return Path(base) / "reports"
+
+
 def table_path(base: Path, table: str, fmt: str) -> Path:
     return Path(base) / "csv" / f"{table}.{fmt}"
 

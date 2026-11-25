@@ -91,6 +91,8 @@
     "escalated": 25,
     "fill_rate_after": 0.999926,
     "fill_rate_before": 0.999839,
+    "fill_rate_short_after": 0.998718,
+    "fill_rate_short_before": 0.99721,
     "mitigation_cost_inr": 244068.55,
     "mitigation_cost_non_backorder_inr": 236068.65,
     "mitigation_options": 973,
@@ -105,7 +107,9 @@
     },
     "pct_compliant_non_backorder": 79.83,
     "pct_fully_covered": 59.66,
+    "pct_shortage_units_covered": 51.52,
     "pct_sku_locations_short": 11.71,
+    "pct_value_at_risk_recovered": 86.22,
     "recommended_by_type": {
       "ALTERNATE_SUPPLIER": 11,
       "BACKORDER": 47,
@@ -115,6 +119,9 @@
       "TRANSFER": 122
     },
     "recommended_violations": 0,
+    "short_sku_locations_finished": 196,
+    "shortage_units_covered_ea": 6359,
+    "shortage_units_ea": 12342,
     "shortages": 233,
     "shortages_by_primary_cause": {
       "DEMAND_SPIKE": 45,
@@ -144,7 +151,12 @@
       "ESCALATED": 25,
       "MITIGATION_SELECTED": 161
     },
-    "total_demand_ea": 9376097
+    "stockout_units_after_ea": 694,
+    "stockout_units_ea": 1503,
+    "total_demand_ea": 9376097,
+    "value_at_risk_after_inr": 64640.13,
+    "value_at_risk_inr": 469100.44,
+    "value_at_risk_recovered_inr": 404460.31
   },
   "scale": "starter",
   "seed": 20261022

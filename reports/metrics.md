@@ -15,8 +15,23 @@ detection metrics compare the `exception` table with `ground_truth/` (matched on
 | Shortages with cause (any) | COMPONENT_SHORTAGE 3, DEMAND_SPIKE 83, LEAD_TIME_FENCE 116, LOW_OPENING_STOCK 34, PO_DELAYED 28, PRODUCTION_CAPACITY 42, SUPPLIER_CAPACITY 79 |
 | Fill rate before mitigation | 99.9839% |
 | Fill rate after recommended mitigations | 99.9926% |
+| Fill rate, only the 196 finished SKU-locations with a shortage — before | 99.7210% |
+| Fill rate, only SKU-locations with a shortage — after recommended mitigations | 99.8718% |
 
-Fill rate = 1 - sum(min(demand, backlog)) / sum(demand) per SKU-location-week (backlog semantics).
+Fill rate = 1 - sum(min(demand, backlog)) / sum(demand) per SKU-location-week (backlog semantics), over the
+52-week horizon of finished SKUs. The overall rate is dominated by SKU-locations that are never short; the
+short-only rate shows the effect of the mitigations where it applies.
+
+## Recovery
+
+| Metric | Value |
+|---|---|
+| Shortage units (sum of below_ss_qty_ea = gap to safety stock) | 12,342 EA |
+| Covered by recommended mitigations | 6,359 EA (**51.52%**) |
+| Stockout units (sum of shortage_qty_ea) before -> after | 1,503 -> 694 EA |
+| Value at risk before | INR 469,100.44 |
+| Value at risk after (stockout depth left on the post-mitigation balance x unit price) | INR 64,640.13 |
+| **Value at risk recovered** | **INR 404,460.31 (86.22%)** |
 
 ## Mitigations
 
