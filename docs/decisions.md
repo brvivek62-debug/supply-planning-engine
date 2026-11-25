@@ -128,3 +128,8 @@ One line each: decision — reason.
 - New metrics. Shortage units = sum(below_ss_qty_ea), the mitigation requirement, and the covered share = sum(recommended qty_covered_ea) / that. VaR recovered = VaR before - sum(unit price x stockout depth left in the run on the post-mitigation balance). The short-only fill rate is computed over finished SKU-locations with >= 1 shortage across all 52 weeks.
 - run-all = generate -> plan -> validate -> evaluate -> export (+ data profile) -> repro-check; it exits non-zero on any unexpected failure or repro mismatch.
 - supplier_sku: an expiring alternate line now ends >= 4 weeks after its effective_from (lower bound max(2026-03-31, effective_from + 28 d)). Full scale had 2 lines that became effective in 2026 with an earlier effective_to; the draw count is unchanged, so no other table shifts.
+
+## Phase 7
+- Business-rule owners follow who is accountable in practice: supplier terms and capacity -> Supplier; lanes, delays, expedite, transfers -> Logistics analyst; receipts, ledger, in-transit -> Carrier / warehouse operator; approvals, substitutes, overtime, escalation policy -> Operations manager; everything computed by the plan -> Planner.
+- Quick start uses `python3 -m venv` + `pip install -e .` exactly as the brief asks; tests need `pip install -e ".[dev]"`, documented separately.
+- README cites real check names and test node IDs as evidence so each requirement can be verified by running one command.

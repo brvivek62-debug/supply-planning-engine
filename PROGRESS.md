@@ -10,7 +10,7 @@
 | 4 | Mitigations | ✅ done (test + starter) |
 | 5 | Edge cases & ground truth | ✅ done (test + starter) |
 | 6 | Validate, export, repro, full scale | ✅ done (starter + full) |
-| 7 | README & polish | ⏳ next |
+| 7 | README & polish | ✅ done |
 
 ## Phase 0 — done
 - `pyproject.toml` (src layout), `pip install -e ".[dev]"` works.
@@ -65,8 +65,15 @@
 - New metrics. Starter: 51.5% of shortage units covered; VaR recovered INR 404,460 (86.2%); short-only fill rate 99.72% -> 99.87%. Full: 26.2% covered; VaR recovered INR 10,860,136 (15.0%); short-only fill rate 96.16% -> 96.79%.
 - Tests: 140 passing (adds tests/test_phase6.py).
 
+## Phase 7 — done
+- `README.md`: all 13 sections of MASTER_PROMPT 15 (Mermaid architecture, copy-paste quick start, configuration, commands, outputs map, planning logic, edge cases, validation + metrics headline numbers from `reports/`, reproducibility, assumptions/limitations) and a requirement -> evidence table for every item in PDF sections 1-10 (78 cited paths, all verified to exist).
+- `docs/business_rules.md`: 49 numbered rules (BR-01..BR-49), each with owning actor, enforcing module and verifying check.
+- `reports/test_results.txt`: 140 passed.
+- Fresh-clone test (2026-11-25): `git clone` into /tmp, new venv (Python 3.15), `pip install -e .`, `python -m planner run-all --scale starter` -> exit 0 in 46 s, 0 unexpected failures, repro IDENTICAL, `git status` clean (every regenerated file byte-identical to the commit). `pip install -e ".[dev]"` + `pytest` -> 140 passed. Repeated on Python 3.12: 140 passed, run-all exit 0, byte-identical.
+- Section 18 self-check: all items confirmed (see README section 13).
+
 ## Next
-- Phase 7: README (all sections + requirement -> evidence checklist), docs/business_rules.md, fresh-clone test.
+- Phase 8 (optional): Streamlit viewer.
 
 ## Open issues
 - Remaining backorders are mostly W01-W03 shortages inside the lead-time fence and MAKE shortages without spare plant capacity before the run end.

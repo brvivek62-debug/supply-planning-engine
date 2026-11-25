@@ -420,7 +420,7 @@ Every requirement in the assignment PDF, sections 1–10, with the file that pro
 | Bridge tables for N:M | `sku_location`, `supplier_sku`, `sku_substitute`, `bom`, `shortage_cause`; `tests/test_schema.py::test_bridge_tables_cover_many_to_many` |
 | Event history kept; all joins validated | `purchase_order_event.csv`, `shortage_event.csv`; FK checks in `reports/validation_summary.md` |
 | Anomalies stored with an issue_type / ground-truth label, unrelated rows untouched | `ground_truth/starter/ground_truth.csv`, `exception.csv`; `tests/test_inject_evaluate.py::test_injection_touches_only_targeted_records` |
-| ID patterns SKU-000001, DEM-…-2026W01, PO-2026-000001, SHORT-2026-000001, MIT-…-01; zero-padded, immutable, consistent | `src/planner/ids.py`; `tests/test_ids.py`; `id_format` checks + FK checks in `reports/validation_summary.md` |
+| ID patterns SKU-000001, DEM-…-2026W01, PO-2026-000001, SHORT-2026-000001, MIT-…-01; zero-padded, immutable, consistent | `src/planner/ids.py`; `tests/test_ids.py`; `id_format` + `fk_integrity` checks in `reports/validation_summary.md` |
 
 ### §5 Synthetic data generation steps
 
@@ -459,7 +459,7 @@ Every requirement in the assignment PDF, sections 1–10, with the file that pro
 | Every shortage has explainable causes | checks `every_shortage_explained`, `cause_evidence_resolves`, `explanation_names_ids`; `tests/test_plan.py::test_every_shortage_has_resolvable_cause` |
 | Every mitigation respects policy and available capacity | checks `mitigation_policy`, `mitigation_capacity_ledger`; `tests/test_mitigations.py::test_no_recommended_violation`, `test_capacity_ledger_never_negative_after_mitigation` |
 | Alternatives show cost and service trade-offs | `mitigation_option.csv` (cost, coverage, weeks late, fill rate after, score per option); `tests/test_mitigations.py::test_alternatives_show_cost_vs_service` |
-| PKs unique, all FK joins valid | `pk` / `fk` checks and `sqlite_fk_check` in `reports/validation_summary.md` |
+| PKs unique, all FK joins valid | `pk_unique` / `fk_integrity` checks and `sqlite_fk_check` in `reports/validation_summary.md` |
 | Derived values reconcile; lifecycle transitions and dates valid | `on_hand_equals_ledger`, `po_qty_uom_moq`, `lifecycle_transitions`, `event_ts_increasing`, `effective_date_order`, `no_event_after_as_of` |
 
 ### §8 Evaluation focus
@@ -467,7 +467,7 @@ Every requirement in the assignment PDF, sections 1–10, with the file that pro
 | Area | Evidence |
 |---|---|
 | A Realistic distributions, variation | `reports/data_profile.md`, `reports/figures/*.png`; `tests/test_generate.py::test_realistic_variation` |
-| B Consistent IDs, valid joins | `id_format`, `fk`, `sqlite_fk_check` in `reports/validation_summary.md` |
+| B Consistent IDs, valid joins | `id_format`, `fk_integrity`, `sqlite_fk_check` in `reports/validation_summary.md` |
 | C Dependency and lifecycle consistency | `docs/erd.md`; `lifecycle_transitions`, `status_equals_last_event`, `shortage_lifecycle` |
 | D Correct derived values, reconciliation | `pab_reconciles`, `on_hand_equals_ledger`, `shortages_match_pab`, `mitigation_coverage_recomputes` |
 | E Normal, boundary, failure, exception coverage | `ground_truth/starter/ground_truth.csv` (50 anomalies, 15 boundary); `exception.csv`; boundary FP = 0 in `reports/metrics.md` |
