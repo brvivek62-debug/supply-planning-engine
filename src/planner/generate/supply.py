@@ -97,11 +97,26 @@ def expected_sku_load(ctx: Ctx) -> pd.DataFrame:
     return pd.concat([m, cm]) if cm is not None else m
 
 
+def lot_granularity(ss: pd.DataFrame, supplier_ids: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Per supplier: the largest minimum lot (MOQ rounded to the order multiple, in EA) and the largest order
+    increment (order multiple x conversion, EA) over its APPROVED primary lines; 1 when it has none."""
+    p = ss[ss["is_primary"] & (ss["approval_status"] == "APPROVED")]
+    conv = p["uom_conversion"].fillna(1).astype(np.int64)
+    mult = p["order_multiple"].fillna(1).astype(np.int64)
+    moq = p["moq"].fillna(1).astype(np.int64)
+    g = pd.DataFrame({"supplier_id": p["supplier_id"], "minlot": -(-moq // mult) * mult * conv, "unit": mult * conv})
+    agg = g.groupby("supplier_id")[["minlot", "unit"]].max().reindex(supplier_ids, fill_value=1)
+    return agg["minlot"].to_numpy(dtype=float), agg["unit"].to_numpy(dtype=float)
+
+
 def gen_supplier_capacity(ctx: Ctx) -> pd.DataFrame:
     """Capacity per week = the supplier's expected (seasonal) load of its primary SKUs in that week
-    x headroom (x weekly noise). About `disruption_supplier_share` of loaded suppliers get one temporary
-    disruption window (`disruption_weeks` long) where capacity drops to `disruption_factor` x normal;
-    the window and the disrupted flag are latent (never exported)."""
+    x headroom (x weekly noise), floored at `min_lots_per_week` x its largest minimum lot and rounded up to whole
+    order increments, so a minimum lot of every primary line still fits next to the supplier's other traffic. About `disruption_supplier_share` of
+    loaded suppliers get one temporary disruption window (`disruption_weeks` long) where capacity drops to
+    `disruption_factor` x normal, followed by a catch-up window (`disruption_recovery_weeks_ratio` x the window
+    length) whose extra capacity repays the window's deficit; the windows and the disrupted flag are latent
+    (never exported)."""
     rng = ctx.rngs("supplier_capacity")
     sup, ss = ctx["supplier"], ctx["supplier_sku"]
     sc = ctx.cfg["supply"]
@@ -125,6 +140,12 @@ def gen_supplier_capacity(ctx: Ctx) -> pd.DataFrame:
     base_load = np.where(load.to_numpy() > 0, load.to_numpy(), floor_load * rng.uniform(0.2, 0.6, len(sup)))
     base = base_load * head
     noise = rng.uniform(0.92, 1.08, (len(sup), W))
+    minlot, unit = lot_granularity(ss, sup["supplier_id"].to_numpy())
+    lots = float(sc.get("min_lots_per_week", 1.0))
+    normal = np.maximum(base[:, None] * shape * noise, (minlot * np.maximum(head, lots))[:, None])
+    normal = np.ceil(normal / unit[:, None]) * unit[:, None]
+    rec_ratio = float(sc.get("disruption_recovery_weeks_ratio", 0.0))
+    rec_margin = float(sc.get("disruption_recovery_margin", 1.0))
     # temporary disruptions: only suppliers that carry primary load, window fully inside the horizon
     factor = np.ones((len(sup), W))
     loaded = np.flatnonzero(load.to_numpy() > 0)
@@ -148,10 +169,19 @@ def gen_supplier_capacity(ctx: Ctx) -> pd.DataFrame:
         # the component disruption is already under way at the planning run (starts W02-W04, inside most lead
         # times, so it cannot be pre-built for); others start after W02 and end >= 8 weeks before W52
         start = int(rng.integers(1, 4)) if k == comp_pick else int(rng.integers(2, W - dur - 8))
-        factor[k, start:start + dur] = rng.uniform(flo, fhi)
+        f = rng.uniform(flo, fhi)
+        factor[k, start:start + dur] = f
         disrupted[k] = True
+        # catch-up: the supplier runs extra shifts after the outage until the lost output is repaid. Deficit per
+        # window week (in units of expected load) = 1 - f x headroom; surplus per catch-up week = r x headroom - 1
+        rec = int(np.ceil(dur * rec_ratio))
+        deficit = max(0.0, 1.0 - f * head[k]) * dur * rec_margin
+        if rec > 0 and deficit > 0:
+            r = (1.0 + deficit / rec) / head[k]
+            end = min(W, start + dur + rec)
+            factor[k, start + dur:end] = np.maximum(factor[k, start + dur:end], r)
     ctx.aux["disrupted"] = pd.Series(disrupted, index=sup["supplier_id"].to_numpy())   # latent, never exported
-    cap = np.maximum(1, np.floor(base[:, None] * shape * noise * factor + 0.5)).astype(np.int64)
+    cap = np.maximum(1, np.floor(normal * factor + 0.5)).astype(np.int64)
     df = pd.DataFrame({
         "supplier_id": np.repeat(sup["supplier_id"].to_numpy(), W),
         "week": np.tile(cal.week_labels(W), len(sup)),

@@ -25,9 +25,9 @@ Forecast rows: 966,524.
 | ROAD | 1,072 | 1 | 2 | 2.12 | 3 |
 | SEA | 422 | 5 | 7 | 7.05 | 9 |
 
-- Supplier capacity utilisation (firm + planned receipts / capacity) per supplier-week: median 67.4%, p90 100.0%, weeks at or above capacity 7.7% (injected overloads + MRP filling capacity)
+- Supplier capacity utilisation (firm + planned receipts / capacity) per supplier-week: median 63.6%, p90 100.0%, weeks at or above capacity 15.0% (injected overloads + MRP filling capacity)
 - Transport delay rate (non-cancelled POs with delay_weeks > 0): 8.30%; delay weeks: 0 wk 9,240, 1 wk 263, 2 wk 257, 3 wk 280
-- PO status mix: CANCELLED 400 (4.0%), CONFIRMED 2,379 (23.7%), CREATED 496 (4.9%), DELAYED 640 (6.4%), IN_TRANSIT 3,777 (37.6%), RECEIVED 2,000 (19.9%), SHIPPED 348 (3.5%)
+- PO status mix: CANCELLED 400 (4.0%), CONFIRMED 2,385 (23.8%), CREATED 495 (4.9%), DELAYED 640 (6.4%), IN_TRANSIT 3,770 (37.5%), RECEIVED 2,000 (19.9%), SHIPPED 350 (3.5%)
 
 ## Figures
 

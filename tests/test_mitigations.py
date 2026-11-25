@@ -134,3 +134,68 @@ def test_draw_respects_safety_stock(mit_planned, test_cfg):
         hi = bf[1] if bf else g.W
         if q > 0:
             assert (L.bal[j, 0:hi] - q >= g.ss[j]).all()
+
+
+# --- minimum coverage rule (policy.min_coverage_pct) -------------------------------------------------------------
+
+def test_min_coverage_rule_holds(mit_planned, test_cfg):
+    """No recommended non-backorder option below the minimum coverage; MITIGATION_SELECTED never below it; a
+    BACKORDER is recommended only when no COMPLIANT non-backorder option reaches it, and its final status follows
+    value at risk vs the approval threshold."""
+    _, t = mit_planned
+    m = float(test_cfg["policy"]["min_coverage_pct"])
+    thr = float(test_cfg["policy"]["approval_cost_threshold_inr"])
+    assert m == 0.25
+    mo, sh = t["mitigation_option"], t["shortage"].set_index("shortage_id")
+    rec = mo[mo["is_recommended"]].set_index("shortage_id")
+    non_bo = rec[rec["option_type"] != "BACKORDER"]
+    assert (non_bo["coverage_pct"] >= m).all()
+    selected = sh.index[sh["status"] == "MITIGATION_SELECTED"]
+    assert (rec.loc[selected, "coverage_pct"] >= m).all()
+    reach = set(mo[(mo["policy_status"] == "COMPLIANT") & (mo["option_type"] != "BACKORDER")
+                   & (mo["coverage_pct"] >= m)]["shortage_id"])
+    bo = rec[rec["option_type"] == "BACKORDER"]
+    assert not (set(bo.index) & reach)
+    want = np.where(sh.loc[bo.index, "value_at_risk_inr"] > thr, "ESCALATED", "BACKORDER_ACCEPTED")
+    assert (sh.loc[bo.index, "status"].to_numpy() == want).all()
+    assert plan_checks.check_min_coverage(t, test_cfg).failures == 0
+
+
+def test_recommend_skips_option_below_min_coverage(test_cfg):
+    """Unit test of decide.recommend: a COMPLIANT option covering 20% loses to BACKORDER; at 25% it wins."""
+    from types import SimpleNamespace
+    from planner.plan import decide
+    ctx = SimpleNamespace(cfg=test_cfg, policy=test_cfg["policy"])
+    sh = SimpleNamespace(below=100, base_value=1e6)
+
+    def opts(covered):
+        return [{"option_type": "TRANSFER", "policy_status": "COMPLIANT", "qty_covered_ea": covered, "weeks_late": 0,
+                 "incremental_cost_inr": 10.0, "option_seq": 1},
+                {"option_type": "BACKORDER", "policy_status": "COMPLIANT", "qty_covered_ea": 0, "weeks_late": 3,
+                 "incremental_cost_inr": 0.0, "option_seq": 2}]
+    o = opts(20)
+    assert o[decide.recommend(ctx, sh, o)]["option_type"] == "BACKORDER"
+    o = opts(25)
+    assert o[decide.recommend(ctx, sh, o)]["option_type"] == "TRANSFER"
+    thr = float(test_cfg["policy"]["approval_cost_threshold_inr"])
+    assert decide.final_status("BACKORDER", False, thr + 1, thr)[0] == "ESCALATED"
+    assert decide.final_status("BACKORDER", True, thr, thr)[0] == "BACKORDER_ACCEPTED"
+    assert decide.final_status("TRANSFER", False, thr + 1, thr)[0] == "MITIGATION_SELECTED"
+
+
+def test_min_coverage_check_catches_low_coverage_selection(mit_planned, test_cfg):
+    """Mutation: select a low-coverage option for one shortage -> the check fails."""
+    _, t = mit_planned
+    t2 = _copy(t)
+    mo = t2["mitigation_option"]
+    m = float(test_cfg["policy"]["min_coverage_pct"])
+    low = mo[(mo["option_type"] != "BACKORDER") & (mo["coverage_pct"] < m) & ~mo["is_recommended"]]
+    if len(low) == 0:                                    # fabricate one from any non-backorder option
+        low = mo[mo["option_type"] != "BACKORDER"].head(1)
+        mo.loc[low.index, "coverage_pct"] = 0.1
+    k = low.index[0]
+    sid = mo.at[k, "shortage_id"]
+    mo.loc[mo["shortage_id"] == sid, "is_recommended"] = False
+    mo.at[k, "is_recommended"] = True
+    t2["shortage"].loc[t2["shortage"]["shortage_id"] == sid, "status"] = "MITIGATION_SELECTED"
+    assert plan_checks.check_min_coverage(t2, test_cfg).failures >= 1

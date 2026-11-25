@@ -6,11 +6,11 @@ quality gate caught and handled an injected anomaly); every other failure is **u
 
 | Result | Value |
 |---|---|
-| Checks run | 243 |
-| PASS | 239 |
+| Checks run | 244 |
+| PASS | 240 |
 | EXPECTED_FAIL (all failures explained by exceptions) | 4 |
 | FAIL | 0 |
-| Rows checked | 2,473,778 |
+| Rows checked | 2,465,829 |
 | Expected failures (records) | 44 |
 | **Unexpected failures** | **0** |
 | Exceptions raised by the planner | DUPLICATE_INBOUND 10, LEAD_TIME_IGNORED 10, SUPPLIER_CAPACITY_EXCEEDED 10, UNAPPROVED_SUBSTITUTE 10, UOM_MISMATCH 10 |
@@ -21,7 +21,7 @@ quality gate caught and handled an injected anomaly); every other failure is **u
 |---|---|---|---|---|---|---|
 | po_qty_uom_moq | purchase_order | 10 | 10 | 0 | UOM_MISMATCH | PO-2026-000189; PO-2026-000290; PO-2026-000432 |
 | po_receipt_week_arithmetic | purchase_order | 10 | 10 | 0 | LEAD_TIME_IGNORED | PO-2026-000238; PO-2026-000262; PO-2026-000301 |
-| firm_po_within_supplier_capacity | purchase_order | 10 | 10 | 0 | SUPPLIER_CAPACITY_EXCEEDED | SUP-0009/2026W09; SUP-0013/2026W01; SUP-0013/2026W02 |
+| firm_po_within_supplier_capacity | purchase_order | 10 | 10 | 0 | SUPPLIER_CAPACITY_EXCEEDED | SUP-0013/2026W02; SUP-0019/2026W01; SUP-0021/2026W01 |
 | in_transit_mirrors_open_pos | inventory | 14 | 14 | 0 | DUPLICATE_INBOUND + UOM_MISMATCH | PO-2026-000170; PO-2026-000189; PO-2026-000290 |
 
 ## All checks
@@ -145,32 +145,32 @@ quality gate caught and handled an injected anomaly); every other failure is **u
 | schema | fk_integrity | inventory | 2,245 | 0 | 0 | 0 | PASS | location_id -> location.location_id |
 | schema | fk_integrity | inventory | 2,245 | 0 | 0 | 0 | PASS | sku_id,location_id -> sku_location.sku_id,location_id |
 | schema | fk_integrity | inventory | 468 | 0 | 0 | 0 | PASS | po_id -> purchase_order.po_id |
-| schema | pk_unique | production_plan | 1,263 | 0 | 0 | 0 | PASS | PK (prod_plan_id) unique and non-null |
-| schema | required_not_null | production_plan | 1,263 | 0 | 0 | 0 | PASS | required fields populated |
-| schema | enum_allowed | production_plan | 1,263 | 0 | 0 | 0 | PASS | values within allowed enums |
-| schema | id_format | production_plan | 1,263 | 0 | 0 | 0 | PASS | ID columns match their regex |
-| schema | value_bounds | production_plan | 1,263 | 0 | 0 | 0 | PASS | numeric fields within bounds |
-| schema | fk_integrity | production_plan | 1,263 | 0 | 0 | 0 | PASS | sku_id -> sku.sku_id |
-| schema | fk_integrity | production_plan | 1,263 | 0 | 0 | 0 | PASS | plant_location_id -> location.location_id |
-| schema | fk_integrity | production_plan | 1,263 | 0 | 0 | 0 | PASS | sku_id,plant_location_id -> sku_location.sku_id,location_id |
-| schema | duplicate_natural_key | production_plan | 1,263 | 0 | 0 | 0 | PASS | natural key (sku_id, plant_location_id, week) unique |
+| schema | pk_unique | production_plan | 1,242 | 0 | 0 | 0 | PASS | PK (prod_plan_id) unique and non-null |
+| schema | required_not_null | production_plan | 1,242 | 0 | 0 | 0 | PASS | required fields populated |
+| schema | enum_allowed | production_plan | 1,242 | 0 | 0 | 0 | PASS | values within allowed enums |
+| schema | id_format | production_plan | 1,242 | 0 | 0 | 0 | PASS | ID columns match their regex |
+| schema | value_bounds | production_plan | 1,242 | 0 | 0 | 0 | PASS | numeric fields within bounds |
+| schema | fk_integrity | production_plan | 1,242 | 0 | 0 | 0 | PASS | sku_id -> sku.sku_id |
+| schema | fk_integrity | production_plan | 1,242 | 0 | 0 | 0 | PASS | plant_location_id -> location.location_id |
+| schema | fk_integrity | production_plan | 1,242 | 0 | 0 | 0 | PASS | sku_id,plant_location_id -> sku_location.sku_id,location_id |
+| schema | duplicate_natural_key | production_plan | 1,242 | 0 | 0 | 0 | PASS | natural key (sku_id, plant_location_id, week) unique |
 | schema | pk_unique | exception | 50 | 0 | 0 | 0 | PASS | PK (exception_id) unique and non-null |
 | schema | required_not_null | exception | 50 | 0 | 0 | 0 | PASS | required fields populated |
 | schema | enum_allowed | exception | 50 | 0 | 0 | 0 | PASS | values within allowed enums |
 | schema | id_format | exception | 50 | 0 | 0 | 0 | PASS | ID columns match their regex |
 | schema | value_bounds | exception | 50 | 0 | 0 | 0 | PASS | numeric fields within bounds |
-| schema | pk_unique | planned_order | 15,907 | 0 | 0 | 0 | PASS | PK (planned_order_id) unique and non-null |
-| schema | required_not_null | planned_order | 15,907 | 0 | 0 | 0 | PASS | required fields populated |
-| schema | enum_allowed | planned_order | 15,907 | 0 | 0 | 0 | PASS | values within allowed enums |
-| schema | id_format | planned_order | 15,907 | 0 | 0 | 0 | PASS | ID columns match their regex |
-| schema | value_bounds | planned_order | 15,907 | 0 | 0 | 0 | PASS | numeric fields within bounds |
-| schema | fk_integrity | planned_order | 15,907 | 0 | 0 | 0 | PASS | supplier_id -> supplier.supplier_id |
-| schema | fk_integrity | planned_order | 15,907 | 0 | 0 | 0 | PASS | sku_id -> sku.sku_id |
-| schema | fk_integrity | planned_order | 15,907 | 0 | 0 | 0 | PASS | location_id -> location.location_id |
-| schema | fk_integrity | planned_order | 15,907 | 0 | 0 | 0 | PASS | supplier_sku_id -> supplier_sku.supplier_sku_id |
-| schema | fk_integrity | planned_order | 15,907 | 0 | 0 | 0 | PASS | lead_time_id -> lead_time.lead_time_id |
-| schema | fk_integrity | planned_order | 15,907 | 0 | 0 | 0 | PASS | capacity_id -> supplier_capacity.capacity_id |
-| schema | fk_integrity | planned_order | 15,907 | 0 | 0 | 0 | PASS | sku_id,location_id -> sku_location.sku_id,location_id |
+| schema | pk_unique | planned_order | 15,818 | 0 | 0 | 0 | PASS | PK (planned_order_id) unique and non-null |
+| schema | required_not_null | planned_order | 15,818 | 0 | 0 | 0 | PASS | required fields populated |
+| schema | enum_allowed | planned_order | 15,818 | 0 | 0 | 0 | PASS | values within allowed enums |
+| schema | id_format | planned_order | 15,818 | 0 | 0 | 0 | PASS | ID columns match their regex |
+| schema | value_bounds | planned_order | 15,818 | 0 | 0 | 0 | PASS | numeric fields within bounds |
+| schema | fk_integrity | planned_order | 15,818 | 0 | 0 | 0 | PASS | supplier_id -> supplier.supplier_id |
+| schema | fk_integrity | planned_order | 15,818 | 0 | 0 | 0 | PASS | sku_id -> sku.sku_id |
+| schema | fk_integrity | planned_order | 15,818 | 0 | 0 | 0 | PASS | location_id -> location.location_id |
+| schema | fk_integrity | planned_order | 15,818 | 0 | 0 | 0 | PASS | supplier_sku_id -> supplier_sku.supplier_sku_id |
+| schema | fk_integrity | planned_order | 15,818 | 0 | 0 | 0 | PASS | lead_time_id -> lead_time.lead_time_id |
+| schema | fk_integrity | planned_order | 15,818 | 0 | 0 | 0 | PASS | capacity_id -> supplier_capacity.capacity_id |
+| schema | fk_integrity | planned_order | 15,818 | 0 | 0 | 0 | PASS | sku_id,location_id -> sku_location.sku_id,location_id |
 | schema | pk_unique | projected_balance | 92,404 | 0 | 0 | 0 | PASS | PK (sku_id, location_id, week) unique and non-null |
 | schema | required_not_null | projected_balance | 92,404 | 0 | 0 | 0 | PASS | required fields populated |
 | schema | enum_allowed | projected_balance | 92,404 | 0 | 0 | 0 | PASS | values within allowed enums |
@@ -179,52 +179,52 @@ quality gate caught and handled an injected anomaly); every other failure is **u
 | schema | fk_integrity | projected_balance | 92,404 | 0 | 0 | 0 | PASS | sku_id -> sku.sku_id |
 | schema | fk_integrity | projected_balance | 92,404 | 0 | 0 | 0 | PASS | location_id -> location.location_id |
 | schema | fk_integrity | projected_balance | 92,404 | 0 | 0 | 0 | PASS | sku_id,location_id -> sku_location.sku_id,location_id |
-| schema | pk_unique | shortage | 233 | 0 | 0 | 0 | PASS | PK (shortage_id) unique and non-null |
-| schema | required_not_null | shortage | 233 | 0 | 0 | 0 | PASS | required fields populated |
-| schema | enum_allowed | shortage | 233 | 0 | 0 | 0 | PASS | values within allowed enums |
-| schema | id_format | shortage | 233 | 0 | 0 | 0 | PASS | ID columns match their regex |
-| schema | value_bounds | shortage | 233 | 0 | 0 | 0 | PASS | numeric fields within bounds |
-| schema | fk_integrity | shortage | 233 | 0 | 0 | 0 | PASS | sku_id -> sku.sku_id |
-| schema | fk_integrity | shortage | 233 | 0 | 0 | 0 | PASS | location_id -> location.location_id |
-| schema | fk_integrity | shortage | 233 | 0 | 0 | 0 | PASS | sku_id,location_id -> sku_location.sku_id,location_id |
-| schema | duplicate_natural_key | shortage | 233 | 0 | 0 | 0 | PASS | natural key (sku_id, location_id, start_week) unique |
-| schema | pk_unique | shortage_cause | 446 | 0 | 0 | 0 | PASS | PK (shortage_id, cause_code, evidence_id) unique and non-null |
-| schema | required_not_null | shortage_cause | 446 | 0 | 0 | 0 | PASS | required fields populated |
-| schema | enum_allowed | shortage_cause | 446 | 0 | 0 | 0 | PASS | values within allowed enums |
-| schema | id_format | shortage_cause | 446 | 0 | 0 | 0 | PASS | ID columns match their regex |
-| schema | value_bounds | shortage_cause | 446 | 0 | 0 | 0 | PASS | numeric fields within bounds |
-| schema | fk_integrity | shortage_cause | 446 | 0 | 0 | 0 | PASS | shortage_id -> shortage.shortage_id |
-| schema | pk_unique | mitigation_option | 973 | 0 | 0 | 0 | PASS | PK (mitigation_id) unique and non-null |
-| schema | required_not_null | mitigation_option | 973 | 0 | 0 | 0 | PASS | required fields populated |
-| schema | enum_allowed | mitigation_option | 973 | 0 | 0 | 0 | PASS | values within allowed enums |
-| schema | id_format | mitigation_option | 973 | 0 | 0 | 0 | PASS | ID columns match their regex |
-| schema | value_bounds | mitigation_option | 973 | 0 | 0 | 0 | PASS | numeric fields within bounds |
-| schema | fk_integrity | mitigation_option | 973 | 0 | 0 | 0 | PASS | shortage_id -> shortage.shortage_id |
-| schema | fk_integrity | mitigation_option | 12 | 0 | 0 | 0 | PASS | ref_po_id -> purchase_order.po_id |
-| schema | fk_integrity | mitigation_option | 82 | 0 | 0 | 0 | PASS | ref_supplier_id -> supplier.supplier_id |
-| schema | fk_integrity | mitigation_option | 588 | 0 | 0 | 0 | PASS | ref_lead_time_id -> lead_time.lead_time_id |
-| schema | fk_integrity | mitigation_option | 586 | 0 | 0 | 0 | PASS | ref_from_location_id -> location.location_id |
+| schema | pk_unique | shortage | 203 | 0 | 0 | 0 | PASS | PK (shortage_id) unique and non-null |
+| schema | required_not_null | shortage | 203 | 0 | 0 | 0 | PASS | required fields populated |
+| schema | enum_allowed | shortage | 203 | 0 | 0 | 0 | PASS | values within allowed enums |
+| schema | id_format | shortage | 203 | 0 | 0 | 0 | PASS | ID columns match their regex |
+| schema | value_bounds | shortage | 203 | 0 | 0 | 0 | PASS | numeric fields within bounds |
+| schema | fk_integrity | shortage | 203 | 0 | 0 | 0 | PASS | sku_id -> sku.sku_id |
+| schema | fk_integrity | shortage | 203 | 0 | 0 | 0 | PASS | location_id -> location.location_id |
+| schema | fk_integrity | shortage | 203 | 0 | 0 | 0 | PASS | sku_id,location_id -> sku_location.sku_id,location_id |
+| schema | duplicate_natural_key | shortage | 203 | 0 | 0 | 0 | PASS | natural key (sku_id, location_id, start_week) unique |
+| schema | pk_unique | shortage_cause | 404 | 0 | 0 | 0 | PASS | PK (shortage_id, cause_code, evidence_id) unique and non-null |
+| schema | required_not_null | shortage_cause | 404 | 0 | 0 | 0 | PASS | required fields populated |
+| schema | enum_allowed | shortage_cause | 404 | 0 | 0 | 0 | PASS | values within allowed enums |
+| schema | id_format | shortage_cause | 404 | 0 | 0 | 0 | PASS | ID columns match their regex |
+| schema | value_bounds | shortage_cause | 404 | 0 | 0 | 0 | PASS | numeric fields within bounds |
+| schema | fk_integrity | shortage_cause | 404 | 0 | 0 | 0 | PASS | shortage_id -> shortage.shortage_id |
+| schema | pk_unique | mitigation_option | 886 | 0 | 0 | 0 | PASS | PK (mitigation_id) unique and non-null |
+| schema | required_not_null | mitigation_option | 886 | 0 | 0 | 0 | PASS | required fields populated |
+| schema | enum_allowed | mitigation_option | 886 | 0 | 0 | 0 | PASS | values within allowed enums |
+| schema | id_format | mitigation_option | 886 | 0 | 0 | 0 | PASS | ID columns match their regex |
+| schema | value_bounds | mitigation_option | 886 | 0 | 0 | 0 | PASS | numeric fields within bounds |
+| schema | fk_integrity | mitigation_option | 886 | 0 | 0 | 0 | PASS | shortage_id -> shortage.shortage_id |
+| schema | fk_integrity | mitigation_option | 8 | 0 | 0 | 0 | PASS | ref_po_id -> purchase_order.po_id |
+| schema | fk_integrity | mitigation_option | 70 | 0 | 0 | 0 | PASS | ref_supplier_id -> supplier.supplier_id |
+| schema | fk_integrity | mitigation_option | 544 | 0 | 0 | 0 | PASS | ref_lead_time_id -> lead_time.lead_time_id |
+| schema | fk_integrity | mitigation_option | 558 | 0 | 0 | 0 | PASS | ref_from_location_id -> location.location_id |
 | schema | fk_integrity | mitigation_option | 25 | 0 | 0 | 0 | PASS | ref_substitute_id -> sku_substitute.substitute_id |
 | schema | fk_integrity | mitigation_option | 28 | 0 | 0 | 0 | PASS | ref_substitute_sku_id -> sku.sku_id |
-| schema | fk_integrity | mitigation_option | 44 | 0 | 0 | 0 | PASS | ref_plant_location_id -> location.location_id |
-| schema | duplicate_natural_key | mitigation_option | 973 | 0 | 0 | 0 | PASS | natural key (shortage_id, option_seq) unique |
-| schema | pk_unique | mitigation_ledger | 928 | 0 | 0 | 0 | PASS | PK (mitigation_id, entry_seq) unique and non-null |
-| schema | required_not_null | mitigation_ledger | 928 | 0 | 0 | 0 | PASS | required fields populated |
-| schema | enum_allowed | mitigation_ledger | 928 | 0 | 0 | 0 | PASS | values within allowed enums |
-| schema | id_format | mitigation_ledger | 928 | 0 | 0 | 0 | PASS | ID columns match their regex |
-| schema | value_bounds | mitigation_ledger | 928 | 0 | 0 | 0 | PASS | numeric fields within bounds |
-| schema | fk_integrity | mitigation_ledger | 928 | 0 | 0 | 0 | PASS | mitigation_id -> mitigation_option.mitigation_id |
-| schema | fk_integrity | mitigation_ledger | 233 | 0 | 0 | 0 | PASS | supplier_id -> supplier.supplier_id |
-| schema | fk_integrity | mitigation_ledger | 42 | 0 | 0 | 0 | PASS | plant_location_id -> location.location_id |
-| schema | fk_integrity | mitigation_ledger | 653 | 0 | 0 | 0 | PASS | sku_id,location_id -> sku_location.sku_id,location_id |
-| schema | pk_unique | shortage_event | 699 | 0 | 0 | 0 | PASS | PK (event_id) unique and non-null |
-| schema | required_not_null | shortage_event | 699 | 0 | 0 | 0 | PASS | required fields populated |
-| schema | enum_allowed | shortage_event | 699 | 0 | 0 | 0 | PASS | values within allowed enums |
-| schema | id_format | shortage_event | 699 | 0 | 0 | 0 | PASS | ID columns match their regex |
-| schema | value_bounds | shortage_event | 699 | 0 | 0 | 0 | PASS | numeric fields within bounds |
-| schema | fk_integrity | shortage_event | 699 | 0 | 0 | 0 | PASS | shortage_id -> shortage.shortage_id |
-| schema | fk_integrity | shortage_event | 233 | 0 | 0 | 0 | PASS | mitigation_id -> mitigation_option.mitigation_id |
-| schema | duplicate_natural_key | shortage_event | 699 | 0 | 0 | 0 | PASS | natural key (shortage_id, seq) unique |
+| schema | fk_integrity | mitigation_option | 27 | 0 | 0 | 0 | PASS | ref_plant_location_id -> location.location_id |
+| schema | duplicate_natural_key | mitigation_option | 886 | 0 | 0 | 0 | PASS | natural key (shortage_id, option_seq) unique |
+| schema | pk_unique | mitigation_ledger | 700 | 0 | 0 | 0 | PASS | PK (mitigation_id, entry_seq) unique and non-null |
+| schema | required_not_null | mitigation_ledger | 700 | 0 | 0 | 0 | PASS | required fields populated |
+| schema | enum_allowed | mitigation_ledger | 700 | 0 | 0 | 0 | PASS | values within allowed enums |
+| schema | id_format | mitigation_ledger | 700 | 0 | 0 | 0 | PASS | ID columns match their regex |
+| schema | value_bounds | mitigation_ledger | 700 | 0 | 0 | 0 | PASS | numeric fields within bounds |
+| schema | fk_integrity | mitigation_ledger | 700 | 0 | 0 | 0 | PASS | mitigation_id -> mitigation_option.mitigation_id |
+| schema | fk_integrity | mitigation_ledger | 181 | 0 | 0 | 0 | PASS | supplier_id -> supplier.supplier_id |
+| schema | fk_integrity | mitigation_ledger | 26 | 0 | 0 | 0 | PASS | plant_location_id -> location.location_id |
+| schema | fk_integrity | mitigation_ledger | 493 | 0 | 0 | 0 | PASS | sku_id,location_id -> sku_location.sku_id,location_id |
+| schema | pk_unique | shortage_event | 609 | 0 | 0 | 0 | PASS | PK (event_id) unique and non-null |
+| schema | required_not_null | shortage_event | 609 | 0 | 0 | 0 | PASS | required fields populated |
+| schema | enum_allowed | shortage_event | 609 | 0 | 0 | 0 | PASS | values within allowed enums |
+| schema | id_format | shortage_event | 609 | 0 | 0 | 0 | PASS | ID columns match their regex |
+| schema | value_bounds | shortage_event | 609 | 0 | 0 | 0 | PASS | numeric fields within bounds |
+| schema | fk_integrity | shortage_event | 609 | 0 | 0 | 0 | PASS | shortage_id -> shortage.shortage_id |
+| schema | fk_integrity | shortage_event | 203 | 0 | 0 | 0 | PASS | mitigation_id -> mitigation_option.mitigation_id |
+| schema | duplicate_natural_key | shortage_event | 609 | 0 | 0 | 0 | PASS | natural key (shortage_id, seq) unique |
 | schema | pk_unique | mitigation_proposal | 10 | 0 | 0 | 0 | PASS | PK (mitigation_id) unique and non-null |
 | schema | required_not_null | mitigation_proposal | 10 | 0 | 0 | 0 | PASS | required fields populated |
 | schema | enum_allowed | mitigation_proposal | 10 | 0 | 0 | 0 | PASS | values within allowed enums |
@@ -247,7 +247,7 @@ quality gate caught and handled an injected anomaly); every other failure is **u
 | input domain | firm_po_within_supplier_capacity | purchase_order | 162 | 10 | 10 | 0 | EXPECTED_FAIL | open PO qty per supplier and receipt week <= capacity_qty_ea |
 | input domain | in_transit_mirrors_open_pos | inventory | 2,703 | 14 | 14 | 0 | EXPECTED_FAIL | exactly one IN_TRANSIT row per SHIPPED/IN_TRANSIT/DELAYED PO with its qty; no po_id on ON_HAND |
 | input domain | demand_derivations | forecast_demand | 89,544 | 0 | 0 | 0 | PASS | demand_id composed of its keys; FINISHED only; week_start_date = ISO Monday; PROMO >= 2x baseline |
-| input domain | production_reconciles_and_fits | production_plan | 1,367 | 0 | 0 | 0 | PASS | requested - cuts = planned = capacity_used; plant load <= production capacity |
+| input domain | production_reconciles_and_fits | production_plan | 1,346 | 0 | 0 | 0 | PASS | requested - cuts = planned = capacity_used; plant load <= production capacity |
 | input domain | lifecycle_transitions | purchase_order_event | 3,558 | 0 | 0 | 0 | PASS | allowed transitions, from_status = previous to_status, seq consecutive from 1 |
 | input domain | event_ts_increasing | purchase_order_event | 3,558 | 0 | 0 | 0 | PASS | event timestamps strictly increase per PO |
 | input domain | no_event_after_as_of | purchase_order_event | 3,558 | 0 | 0 | 0 | PASS | no event dated on/after the as-of date |
@@ -256,18 +256,19 @@ quality gate caught and handled an injected anomaly); every other failure is **u
 | input domain | lead_time_versions_disjoint | lead_time | 513 | 0 | 0 | 0 | PASS | lane versions have non-overlapping effective ranges |
 | planner outputs | pab_reconciles | projected_balance | 92,404 | 0 | 0 | 0 | PASS | closing = opening + firm + planned + production - demand; opening(W01) = ON_HAND; opening(w) = closing(w-1); status consistent |
 | planner outputs | pab_inputs_tie_out | projected_balance | 89,546 | 0 | 0 | 0 | PASS | one row per SKU-location-week; finished demand = forecast; firm receipts = quality-gated open POs |
-| planner outputs | shortages_match_pab | shortage | 235 | 0 | 0 | 0 | PASS | each shortage = maximal run with closing < SS; type, qty, below-SS, value at risk, priority recomputed from PAB; rank by score; IDs numbered by (start_week, sku, location) |
-| planner outputs | planned_order_rules | planned_order | 15,907 | 0 | 0 | 0 | PASS | release >= W01 (lead-time fence); receipt = release + lead time of the standard lane effective at release; qty >= MOQ and multiple of order_multiple; qty_base = qty x conversion; primary APPROVED source |
-| planner outputs | capacity_ledger_non_negative | supplier_capacity | 2,140 | 0 | 0 | 0 | PASS | capacity - firm receipts - planned receipts >= 0 for every supplier-week |
-| planner outputs | shortage_lifecycle | shortage_event | 932 | 0 | 0 | 0 | PASS | allowed transitions, chained from_status, increasing timestamps; status = last event |
-| planner outputs | every_shortage_explained | shortage | 233 | 0 | 0 | 0 | PASS | >= 1 shortage_cause row; primary_cause among them; explanation present |
-| planner outputs | cause_evidence_resolves | shortage_cause | 446 | 0 | 0 | 0 | PASS | evidence_id resolves to a row of evidence_type |
-| planner outputs | explanation_names_ids | shortage | 233 | 0 | 0 | 0 | PASS | explanation names the SKU, location and start week |
-| planner outputs | production_reconciles_and_fits | production_plan | 1,367 | 0 | 0 | 0 | PASS | requested - capacity cut - component cut = planned = capacity used; plant load <= capacity; FIRM only in firm weeks |
+| planner outputs | shortages_match_pab | shortage | 205 | 0 | 0 | 0 | PASS | each shortage = maximal run with closing < SS; type, qty, below-SS, value at risk, priority recomputed from PAB; rank by score; IDs numbered by (start_week, sku, location) |
+| planner outputs | planned_order_rules | planned_order | 15,818 | 0 | 0 | 0 | PASS | release >= W01 (lead-time fence); receipt = release + lead time of the standard lane effective at release; qty >= MOQ and multiple of order_multiple; qty_base = qty x conversion; primary APPROVED source |
+| planner outputs | capacity_ledger_non_negative | supplier_capacity | 2,110 | 0 | 0 | 0 | PASS | capacity - firm receipts - planned receipts >= 0 for every supplier-week |
+| planner outputs | shortage_lifecycle | shortage_event | 812 | 0 | 0 | 0 | PASS | allowed transitions, chained from_status, increasing timestamps; status = last event |
+| planner outputs | every_shortage_explained | shortage | 203 | 0 | 0 | 0 | PASS | >= 1 shortage_cause row; primary_cause among them; explanation present |
+| planner outputs | cause_evidence_resolves | shortage_cause | 404 | 0 | 0 | 0 | PASS | evidence_id resolves to a row of evidence_type |
+| planner outputs | explanation_names_ids | shortage | 203 | 0 | 0 | 0 | PASS | explanation names the SKU, location and start week |
+| planner outputs | production_reconciles_and_fits | production_plan | 1,346 | 0 | 0 | 0 | PASS | requested - capacity cut - component cut = planned = capacity used; plant load <= capacity; FIRM only in firm weeks |
 | planner outputs | bom_dependent_demand | projected_balance | 4,212 | 0 | 0 | 0 | PASS | MAKE production receipts = production plan; component demand = production x qty_per; component balance never negative (parents cut instead) |
-| planner outputs | mitigation_option_rules | mitigation_option | 1,206 | 0 | 0 | 0 | PASS | ID = MIT-<shortage>-<seq>; covered <= below-SS requirement; coverage = covered / requirement; weeks_late; approval rule; VIOLATION <=> reason; required refs; exactly one recommendation per shortage = best-scoring COMPLIANT non-backorder option, else BACKORDER; never a VIOLATION |
-| planner outputs | mitigation_policy | mitigation_option | 973 | 0 | 0 | 0 | PASS | EXPEDITE: unshipped PO, AIR lane, arrives by start; ALTERNATE: APPROVED + effective line, ACTIVE supplier, release >= W01, MOQ/multiple, receipt <= end; SUBSTITUTE: COMPLIANT <=> APPROVED + effective, otherwise an UNAPPROVED_SUBSTITUTE exception |
-| planner outputs | mitigation_capacity_ledger | mitigation_ledger | 19,970 | 0 | 0 | 0 | PASS | entries only for recommended options; firm + planned + mitigation load <= supplier capacity; production + overtime <= plant capacity; a SKU-location that gives stock stays >= safety stock |
-| planner outputs | mitigation_coverage_recomputes | mitigation_option | 186 | 0 | 0 | 0 | PASS | qty_covered = below-SS gap closed by the option's own ledger entries |
-| planner outputs | decision_matches_recommendation | shortage | 233 | 0 | 0 | 0 | PASS | BACKORDER -> BACKORDER_ACCEPTED; approval needed -> ESCALATED; else MITIGATION_SELECTED; final event carries the recommended mitigation_id |
-| sqlite | sqlite_fk_check | all (25 tables) | 219,066 | 0 | 0 | 0 | PASS | load sql/schema.sql + every table with PRAGMA foreign_keys = ON (CHECK constraints enforced); PRAGMA foreign_key_check returns no rows |
+| planner outputs | mitigation_option_rules | mitigation_option | 1,089 | 0 | 0 | 0 | PASS | ID = MIT-<shortage>-<seq>; covered <= below-SS requirement; coverage = covered / requirement; weeks_late; approval rule; VIOLATION <=> reason; required refs; exactly one recommendation per shortage = best-scoring COMPLIANT non-backorder option with coverage >= min_coverage_pct, else BACKORDER; never a VIOLATION |
+| planner outputs | mitigation_policy | mitigation_option | 886 | 0 | 0 | 0 | PASS | EXPEDITE: unshipped PO, AIR lane, arrives by start; ALTERNATE: APPROVED + effective line, ACTIVE supplier, release >= W01, MOQ/multiple, receipt <= end; SUBSTITUTE: COMPLIANT <=> APPROVED + effective, otherwise an UNAPPROVED_SUBSTITUTE exception |
+| planner outputs | mitigation_capacity_ledger | mitigation_ledger | 17,842 | 0 | 0 | 0 | PASS | entries only for recommended options; firm + planned + mitigation load <= supplier capacity; production + overtime <= plant capacity; a SKU-location that gives stock stays >= safety stock |
+| planner outputs | mitigation_coverage_recomputes | mitigation_option | 145 | 0 | 0 | 0 | PASS | qty_covered = below-SS gap closed by the option's own ledger entries |
+| planner outputs | decision_matches_recommendation | shortage | 203 | 0 | 0 | 0 | PASS | BACKORDER -> ESCALATED if value at risk > approval threshold, else BACKORDER_ACCEPTED; approval needed -> ESCALATED; else MITIGATION_SELECTED; final event carries the recommended mitigation_id |
+| planner outputs | mitigation_min_coverage | shortage | 203 | 0 | 0 | 0 | PASS | recommended non-backorder coverage_pct >= policy.min_coverage_pct (0.25); MITIGATION_SELECTED never below it; BACKORDER only when no COMPLIANT non-backorder option reaches it |
+| sqlite | sqlite_fk_check | all (25 tables) | 218,479 | 0 | 0 | 0 | PASS | load sql/schema.sql + every table with PRAGMA foreign_keys = ON (CHECK constraints enforced); PRAGMA foreign_key_check returns no rows |

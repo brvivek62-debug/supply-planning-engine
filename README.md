@@ -44,9 +44,9 @@ All data is synthetic. No external datasets are used (see [docs/source_manifest.
 |---|---|---|
 | SKUs / locations / weeks / suppliers / POs | 300 / 10 / 52 / 50 / 1,010 | 3,000 / 50 / 52 / 500 / 10,040 |
 | Forecast rows | 89,544 | 966,524 |
-| SKU-locations short | 11.71% | 11.87% |
-| Shortages | 233 | 2,513 |
-| Unexpected validation failures | **0** of 243 checks | **0** of 243 checks |
+| SKU-locations short | 11.14% | 10.53% |
+| Shortages (longest episode) | 203 (5 weeks) | 2,130 (10 weeks) |
+| Unexpected validation failures | **0** of 244 checks | **0** of 244 checks |
 | Anomaly detection precision / recall | **1.0 / 1.0** (all 5 types) | **1.0 / 1.0** (all 5 types) |
 | Same-seed reproducibility | 26/26 files identical | 26/26 files identical |
 
@@ -75,7 +75,7 @@ flowchart LR
     DATA --> QG
     DEC --> OUT[("data/&lt;scale&gt;/csv<br/>planner outputs")]
 
-    OUT --> VAL["validate<br/>243 checks + SQLite FK load"]
+    OUT --> VAL["validate<br/>244 checks + SQLite FK load"]
     OUT --> EVA["evaluate<br/>metrics + precision/recall"]
     GT -. "read only here" .-> EVA
     OUT --> EXP["export<br/>JSON, seed.sql, manifest, profile"]
@@ -152,10 +152,12 @@ the output format, so starter and full use exactly the same generator code.
 
 Shared parameters (all in the YAML, documented inline): as-of date **2025-12-29** (start of 2026W01),
 history window, ABC shares (20/30/50%), promo rate 3% at 2–4×, seasonality amplitude, negative-binomial
-dispersion, supplier headroom 1.15–1.3, disruption share 10% (4–8 weeks at 0.5–0.7×), lead-time change
+dispersion, supplier headroom 1.15–1.3 with a floor of 2 minimum lots per week, disruption share 10% (4–8
+weeks at 0.5–0.7×, then a catch-up window of half that length), lead-time change
 share 5% from W27, substitute share 15% (70% approved), PO received 20% / cancelled 4% / delay rate 8%
 (1–3 weeks), opening cover, firm production weeks (4), build-ahead (1 week), policy thresholds (approval
-above ₹2,00,000 or 25% of value at risk, transfer lead 1/2 weeks), cost parameters (AIR premium, freight,
+above ₹2,00,000 or 25% of value at risk, minimum coverage 25% for a non-backorder recommendation, transfer
+lead 1/2 weeks), cost parameters (AIR premium, freight,
 transfer, overtime, backorder penalty, all INR) and score weights (coverage 0.6, timeliness 0.25, cost 0.15).
 
 To try a variant, copy a YAML file, edit it, and pass the same scale name, or override the seed:
@@ -240,9 +242,10 @@ The full numbered rule list with owners is in [docs/business_rules.md](docs/busi
    ≥ SS), SUBSTITUTE_SKU, INCREASE_PRODUCTION, BACKORDER. Each option has coverage, weeks late, cost,
    fill rate after, score and policy status.
 7. **Decide** (`plan/decide.py`): score = 0.6 coverage + 0.25 timeliness − 0.15 normalised cost;
-   requires_approval above ₹2,00,000 or 25% of VaR; recommend the best COMPLIANT non-backorder option,
-   never a VIOLATION, else BACKORDER. Events: OPEN → MITIGATION_PROPOSED → MITIGATION_SELECTED /
-   ESCALATED / BACKORDER_ACCEPTED.
+   requires_approval above ₹2,00,000 or 25% of VaR; recommend the best COMPLIANT non-backorder option
+   with coverage ≥ 25% (`policy.min_coverage_pct`), never a VIOLATION, else BACKORDER. Events: OPEN →
+   MITIGATION_PROPOSED → MITIGATION_SELECTED / ESCALATED / BACKORDER_ACCEPTED. A BACKORDER is ESCALATED
+   when the shortage's value at risk is above ₹2,00,000, otherwise BACKORDER_ACCEPTED.
 
 Example explanation (starter, rank 2):
 > Stockout of 124 EA for SKU-000253 at LOC-008 in 2026W06–W08 (low point -124 EA in 2026W08, safety stock
@@ -273,16 +276,16 @@ its related records, so a case can be traced to the `exception` row that caught 
 
 ## 9. Validation results
 
-`python -m planner validate` runs 243 checks: PK uniqueness, required fields, enums, ID regexes, value
+`python -m planner validate` runs 244 checks: PK uniqueness, required fields, enums, ID regexes, value
 bounds, FK integrity (incl. composite FKs and polymorphic evidence IDs), natural-key duplicates, effective
 dates, event ordering, no events after as-of, lifecycle transitions, status = last event, ledger and PAB
 reconciliation, PO arithmetic, capacity, shortage and cause evidence, mitigation policy and capacity
-ledger, plus a SQLite load with `PRAGMA foreign_keys=ON` and `PRAGMA foreign_key_check`.
+ledger, minimum coverage of recommendations, plus a SQLite load with `PRAGMA foreign_keys=ON` and `PRAGMA foreign_key_check`.
 
 | Scale | Checks | PASS | EXPECTED_FAIL | FAIL | Rows checked | **Unexpected failures** |
 |---|---|---|---|---|---|---|
-| starter | 243 | 239 | 4 (44 records) | 0 | 2,473,778 | **0** |
-| full | 243 | 239 | 4 (188 records) | 0 | 26,599,972 | **0** |
+| starter | 244 | 240 | 4 (44 records) | 0 | 2,465,829 | **0** |
+| full | 244 | 240 | 4 (178 records) | 0 | 26,517,146 | **0** |
 
 The 4 expected failures are the raw-input checks broken by the injected anomalies
 (`po_qty_uom_moq`, `po_receipt_week_arithmetic`, `firm_po_within_supplier_capacity`,
@@ -290,7 +293,7 @@ The 4 expected failures are the raw-input checks broken by the injected anomalie
 names that record under the issue type that explains it; validation never reads the ground truth. Details:
 [reports/validation_summary.md](reports/validation_summary.md), [reports/full/validation_summary.md](reports/full/validation_summary.md).
 
-Tests: **140 passed** ([reports/test_results.txt](reports/test_results.txt)).
+Tests: **145 passed** ([reports/test_results.txt](reports/test_results.txt)).
 
 ## 10. Metrics
 
@@ -299,18 +302,19 @@ From [reports/metrics.md](reports/metrics.md) and [reports/full/metrics.md](repo
 | Metric | Starter | Full |
 |---|---|---|
 | Total demand (finished SKUs, 52 weeks) | 9,376,097 EA | 73,279,054 EA |
-| SKU-locations with ≥ 1 shortage | 208 of 1,777 (11.71%) | 2,288 of 19,274 (11.87%) |
-| Shortages (STOCKOUT / BELOW_SAFETY_STOCK) | 233 (66 / 167) | 2,513 (1,103 / 1,410) |
-| Top primary causes | SUPPLIER_CAPACITY 79, LEAD_TIME_FENCE 47, DEMAND_SPIKE 45 | SUPPLIER_CAPACITY 1,287, LEAD_TIME_FENCE 481, DEMAND_SPIKE 362 |
-| Fill rate before → after recommended mitigations | 99.9839% → 99.9926% | 99.7015% → 99.7502% |
-| Fill rate, short SKU-locations only | 99.72% → 99.87% | 96.16% → 96.79% |
-| Mitigation options (VIOLATION alternatives) | 973 (39) | 11,045 (440) |
-| Recommended mix | TRANSFER 122, BACKORDER 47, INCREASE_PRODUCTION 42, ALT_SUPPLIER 11, SUBSTITUTE 6, EXPEDITE 5 | TRANSFER 1,483, BACKORDER 675, ALT_SUPPLIER 252, INCREASE_PRODUCTION 53, SUBSTITUTE 30, EXPEDITE 20 |
-| COMPLIANT non-backorder recommendation | 79.83% | 73.14% |
-| Fully covered | 59.66% | 48.15% |
-| Total mitigation cost (per covered EA) | ₹244,068.55 (₹37.12) | ₹5,528,459.72 (₹15.72) |
-| Value at risk recovered | ₹404,460 (86.2%) | ₹10,860,136 (15.0%) |
-| Escalated to operations manager | 25 | 180 |
+| SKU-locations with ≥ 1 shortage | 198 of 1,777 (11.14%) | 2,029 of 19,274 (10.53%) |
+| Shortages (STOCKOUT / BELOW_SAFETY_STOCK) | 203 (59 / 144) | 2,130 (845 / 1,285) |
+| Longest shortage episode | 5 weeks | 10 weeks (none open at W52) |
+| Top primary causes | SUPPLIER_CAPACITY 67, LEAD_TIME_FENCE 48, DEMAND_SPIKE 43 | SUPPLIER_CAPACITY 914, LEAD_TIME_FENCE 483, DEMAND_SPIKE 361 |
+| Fill rate before → after recommended mitigations | 99.9846% → 99.9925% | 99.9366% → 99.9635% |
+| Fill rate, short SKU-locations only | 99.72% → 99.86% | 99.09% → 99.48% |
+| Mitigation options (VIOLATION alternatives) | 886 (38) | 9,845 (326) |
+| Recommended mix | TRANSFER 102, BACKORDER 58, INCREASE_PRODUCTION 26, ALT_SUPPLIER 8, SUBSTITUTE 5, EXPEDITE 4 | TRANSFER 1,153, BACKORDER 721, ALT_SUPPLIER 182, INCREASE_PRODUCTION 34, SUBSTITUTE 19, EXPEDITE 21 |
+| COMPLIANT non-backorder recommendation (coverage ≥ 25%) | 71.43% | 66.15% |
+| Fully covered | 59.61% | 50.66% |
+| Total mitigation cost (per covered EA) | ₹231,565.12 (₹34.89) | ₹4,942,199.56 (₹15.16) |
+| Value at risk recovered | ₹381,408 of ₹465,437 (81.9%) | ₹5,680,526 of ₹13,752,480 (41.3%) |
+| Escalated to operations manager | 18 | 168 (incl. 9 high-VaR backorders) |
 | Recommended VIOLATION options | **0** | **0** |
 | Detection precision / recall / F1 (each of 5 types) | 1.0 / 1.0 / 1.0 | 1.0 / 1.0 / 1.0 |
 | Boundary false positives | **0** of 15 | **0** of 45 |
@@ -334,6 +338,10 @@ compares row counts and SHA-256 of every CSV and the ground truth.
 | starter | 26 / 26 files byte-identical | 26 / 26 files differ |
 | full | 26 / 26 files byte-identical | 26 / 26 files differ |
 
+Across machines: a fresh clone on a second machine (Linux, Python 3.13) reproduced every data file
+byte-identically. The PNG figures in `reports/figures/` are excluded from checksums because font rendering
+differs between machines.
+
 Per-file table: [reports/reproducibility.md](reports/reproducibility.md) and
 [reports/full/reproducibility.md](reports/full/reproducibility.md). Committed checksums are in
 `data/<scale>/manifest.json` and [docs/source_manifest.md](docs/source_manifest.md), so a fresh
@@ -350,14 +358,20 @@ Every decision and its reason is logged in [docs/decisions.md](docs/decisions.md
   the PO count to 10,040 (10,000 baseline + 40).
 - **Supplier headroom 1.15–1.3**, above the 1.0–1.15 first suggested: at ~1.08× demand there is no slack to
   rebuild safety stock and 25–30% of SKU-locations stayed short all year. Constraints come from temporary
-  disruptions (10% of suppliers, 4–8 weeks at 0.5–0.7×), not a stored flag.
+  disruptions (10% of suppliers, 4–8 weeks at 0.5–0.7×), not a stored flag. Each disruption is followed by
+  a catch-up window (half its length) whose extra capacity repays the lost output, and normal capacity holds
+  at least 2 minimum lots of the supplier's largest line, so every episode recovers (longest 10 weeks).
+- **Minimum coverage:** a non-backorder option covering less than 25% of the requirement is kept as an
+  alternative but never recommended; the shortage then falls back to BACKORDER (escalated above ₹2,00,000
+  value at risk).
 - **Backlog semantics** in the PAB; fill rate is period fill rate under backlog. The overall fill rate is
   high because most SKU-locations are never short; the short-only fill rate shows the mitigation effect.
 - **One recommendation per shortage**; combinations (e.g. two transfers) are not proposed, so partial
   coverage is reported as `coverage_pct` < 100%.
-- **Full-scale recovery is lower** (26% of shortage units, 15% of value at risk, vs 52% / 86% at starter):
-  most full-scale value at risk sits in W01–W03 shortages inside the lead-time fence or at capacity-bound
-  suppliers that no option can reach in time; these end as BACKORDER_ACCEPTED.
+- **Full-scale recovery is lower** (36% of shortage units, 41% of value at risk, vs 49% / 82% at starter):
+  much of the full-scale value at risk sits in W01–W03 shortages inside the lead-time fence or at disrupted
+  suppliers that no option can reach in time; these end as BACKORDER_ACCEPTED (or ESCALATED above
+  ₹2,00,000).
 - **Approvals:** `ESCALATED` hands a shortage to the operations manager; the approval decision itself happens
   after the planning run and is not simulated, so no `OPERATIONS_MANAGER` event rows exist yet.
 - **Cause code PRODUCTION_CAPACITY** was added to the six in the brief, because MAKE shortages caused by plant
@@ -378,7 +392,7 @@ Every requirement in the assignment PDF, sections 1–10, with the file that pro
 | Requirement | Evidence |
 |---|---|
 | Match forecast demand to inventory, supplier capacity, lead times and production constraints | `src/planner/plan/balance.py`, `replenish.py`, `production.py`; `data/starter/csv/projected_balance.csv`, `planned_order.csv`, `production_plan.csv` |
-| Shortages identified | `data/starter/csv/shortage.csv` (233 rows); `src/planner/plan/shortages.py` |
+| Shortages identified | `data/starter/csv/shortage.csv` (203 rows); `src/planner/plan/shortages.py` |
 | Shortages explained | `shortage.csv` (`explanation`, `primary_cause`), `data/starter/csv/shortage_cause.csv`; check `every_shortage_explained` in `reports/validation_summary.md` |
 | Shortages prioritised | `shortage.csv` (`priority_score`, `priority_rank`); top 20 in `reports/metrics.md` |
 

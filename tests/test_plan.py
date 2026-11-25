@@ -66,6 +66,16 @@ def test_shortage_rate_in_target_band(planned):
     assert 5.0 <= pct <= 12.0, pct
 
 
+def test_shortage_episodes_are_bounded(planned):
+    """Disruptions are temporary and capacity is lot-feasible, so no episode lasts more than 12 weeks unless it
+    is still open at the end of the horizon."""
+    _, t = planned
+    sh = t["shortage"]
+    length = sh["end_week"].map(cal.week_num) - sh["start_week"].map(cal.week_num) + 1
+    open_at_end = sh["end_week"] == cal.week_label(52)
+    assert length[~open_at_end].max() <= 12, sh[~open_at_end & (length > 12)]
+
+
 def test_every_shortage_has_resolvable_cause(planned):
     _, t = planned
     sh, sc = t["shortage"], t["shortage_cause"]

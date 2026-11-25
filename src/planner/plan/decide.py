@@ -12,10 +12,13 @@ For every option (SYSTEM or MANUAL):
   normalised cost = min(1, cost / base value); base value = value at risk, or the SS-gap value
   (below_ss_qty x unit price) for BELOW_SAFETY_STOCK shortages whose value at risk is 0.
 - requires_approval = cost > approval_cost_threshold_inr or cost > approval_var_share x base value.
-Recommendation: the highest-scoring COMPLIANT non-backorder option that covers something (ties: lower cost,
-then option_seq); if there is none, BACKORDER. A VIOLATION is never recommended.
+Recommendation: the highest-scoring COMPLIANT non-backorder option whose coverage_pct >= policy
+min_coverage_pct (ties: lower cost, then option_seq); if there is none, BACKORDER. A VIOLATION is never
+recommended; a COMPLIANT option below the minimum coverage stays visible as an alternative.
 Lifecycle: OPEN -> MITIGATION_PROPOSED -> MITIGATION_SELECTED | ESCALATED (needs OPERATIONS_MANAGER approval)
-| BACKORDER_ACCEPTED.
+| BACKORDER_ACCEPTED. A recommended non-backorder option goes to ESCALATED when it requires approval, else
+MITIGATION_SELECTED. A BACKORDER recommendation goes to ESCALATED when the shortage's value at risk exceeds
+approval_cost_threshold_inr (too much at stake to accept silently), else BACKORDER_ACCEPTED.
 """
 from __future__ import annotations
 
@@ -93,14 +96,30 @@ def needs_approval(ctx, sh, cost: float) -> bool:
     return bool(cost > float(p["approval_cost_threshold_inr"]) or cost > float(p["approval_var_share"]) * sh.base_value)
 
 
+def min_coverage(cfg) -> float:
+    return float(cfg["policy"].get("min_coverage_pct", 0.0))
+
+
+def final_status(option_type: str, requires_approval: bool, value_at_risk: float, threshold: float) -> tuple[str, str]:
+    """Final shortage status and reason code for the recommended option (10.6)."""
+    if option_type == "BACKORDER":
+        if value_at_risk > threshold:
+            return "ESCALATED", "NO_COMPLIANT_OPTION_HIGH_VAR"
+        return "BACKORDER_ACCEPTED", "NO_FEASIBLE_OPTION"
+    if requires_approval:
+        return "ESCALATED", "APPROVAL_REQUIRED"
+    return "MITIGATION_SELECTED", "BEST_COMPLIANT_OPTION"
+
+
 def recommend(ctx, sh, opts: list[dict]) -> int:
     for o in opts:
         o["coverage_pct"] = round(o["qty_covered_ea"] / sh.below, 4) if sh.below else 0.0
         o["score"] = score(ctx, sh, o)
         o["requires_approval"] = needs_approval(ctx, sh, o["incremental_cost_inr"])
         o["is_recommended"] = False
+    min_cov = min_coverage(ctx.cfg)
     cand = [k for k, o in enumerate(opts) if o["policy_status"] == "COMPLIANT" and o["option_type"] != "BACKORDER"
-            and o["qty_covered_ea"] > 0]
+            and o["qty_covered_ea"] > 0 and o["coverage_pct"] >= min_cov]
     if cand:
         best = min(cand, key=lambda k: (-opts[k]["score"], opts[k]["incremental_cost_inr"], opts[k]["option_seq"]))
     else:
@@ -133,10 +152,11 @@ def manual_option(ctx, L, sh, p) -> dict | None:
     return o
 
 
-def events(sh_df: pd.DataFrame, decisions: list[tuple[str, dict]], as_of) -> pd.DataFrame:
+def events(sh_df: pd.DataFrame, decisions: list[tuple[str, dict]], as_of, threshold: float) -> pd.DataFrame:
     t0 = datetime.combine(as_of, time(6, 0))
     ts = [(t0 + timedelta(minutes=10 * k)).isoformat(timespec="seconds") for k in range(3)]
     chosen = dict(decisions)
+    var = sh_df.set_index("shortage_id")["value_at_risk_inr"].astype(float)
     rows = []
     for sid in sorted(sh_df["shortage_id"]):
         rows.append((sid, 1, None, "OPEN", ts[0], "PLANNER", "PAB_BELOW_SAFETY_STOCK", None))
@@ -144,12 +164,7 @@ def events(sh_df: pd.DataFrame, decisions: list[tuple[str, dict]], as_of) -> pd.
         if o is None:
             continue
         rows.append((sid, 2, "OPEN", "MITIGATION_PROPOSED", ts[1], "PLANNER", "OPTIONS_GENERATED", None))
-        if o["option_type"] == "BACKORDER":
-            final = ("BACKORDER_ACCEPTED", "NO_FEASIBLE_OPTION")
-        elif o["requires_approval"]:
-            final = ("ESCALATED", "APPROVAL_REQUIRED")
-        else:
-            final = ("MITIGATION_SELECTED", "BEST_COMPLIANT_OPTION")
+        final = final_status(o["option_type"], bool(o["requires_approval"]), float(var[sid]), threshold)
         rows.append((sid, 3, "MITIGATION_PROPOSED", final[0], ts[2], "PLANNER", final[1], o["mitigation_id"]))
     ev = pd.DataFrame(rows, columns=["shortage_id", "seq", "from_status", "to_status", "event_ts", "actor_role",
                                      "reason_code", "mitigation_id"])

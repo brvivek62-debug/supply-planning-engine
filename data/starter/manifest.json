@@ -17,8 +17,8 @@
     {
       "path": "data/starter/csv/exception.csv",
       "rows": 50,
-      "bytes": 14768,
-      "sha256": "a7ac387537d30fb49a5ece90aa915975d96e9d4db0824797ae32f3cad9984136",
+      "bytes": 14480,
+      "sha256": "e1d8376e25b6ac9486aa927dabc0af8fadce2d5da8d9ef03cfbdcdf06449a6d5",
       "over_50mb": false
     },
     {
@@ -32,7 +32,7 @@
       "path": "data/starter/csv/inventory.csv",
       "rows": 2245,
       "bytes": 130891,
-      "sha256": "11bd9858cfdedf905ca2ff2cb0954a2c82defb3275463f577c395ca64489ec99",
+      "sha256": "16a10960b328647ab1127b3f5ba6f4c481e6441f57f6ba30e7814ebddb4738af",
       "over_50mb": false
     },
     {
@@ -58,30 +58,30 @@
     },
     {
       "path": "data/starter/csv/mitigation_ledger.csv",
-      "rows": 928,
-      "bytes": 61087,
-      "sha256": "a033a52aaf648329a90bc19d0a35d608a502427748fe3c3807f650ceeabe2c80",
+      "rows": 700,
+      "bytes": 46136,
+      "sha256": "7c33b4fea44c6f83ae9694065431c2e5b2fc574d2be585d5c4d6796dca0a5f3e",
       "over_50mb": false
     },
     {
       "path": "data/starter/csv/mitigation_option.csv",
-      "rows": 973,
-      "bytes": 148917,
-      "sha256": "53c4219332573efe5f382af9ca5b3bf69179d1fa40a2784173609e433b1a7a40",
+      "rows": 886,
+      "bytes": 135891,
+      "sha256": "33fc4dd483b0a521050753202f908758f9864d4ffe2588d5f09dbd04fea8db18",
       "over_50mb": false
     },
     {
       "path": "data/starter/csv/mitigation_proposal.csv",
       "rows": 10,
-      "bytes": 1025,
-      "sha256": "9074cba7ea550f92793158f0eac081effb51c4d372b70bb6c2fbd62378a73b2c",
+      "bytes": 1026,
+      "sha256": "5d116e42ef3455c03b97361f635b985b334de1207fef6ff07f72c2d3a3fdecd0",
       "over_50mb": false
     },
     {
       "path": "data/starter/csv/planned_order.csv",
-      "rows": 15907,
-      "bytes": 1728274,
-      "sha256": "546a86489371bc8849ca142e0d421f2abcfffecf9b3bd8e6be688580d53ac306",
+      "rows": 15818,
+      "bytes": 1718748,
+      "sha256": "47f7d048037495b46860e4bb5e9fac0e3c5962f8aae5ed17fcdfb0d1b5ed0b34",
       "over_50mb": false
     },
     {
@@ -93,51 +93,51 @@
     },
     {
       "path": "data/starter/csv/production_plan.csv",
-      "rows": 1263,
-      "bytes": 82107,
-      "sha256": "0e0dcbfb1c3ef7fcb669e34cdfe807c3044567c766132438f5161ad8c5d2a60d",
+      "rows": 1242,
+      "bytes": 80769,
+      "sha256": "13ecbea953de2414b196311c1c4fe0478f426f7c6872b034f90170b4ab34af2b",
       "over_50mb": false
     },
     {
       "path": "data/starter/csv/projected_balance.csv",
       "rows": 92404,
-      "bytes": 4576713,
-      "sha256": "f98ebaa93ed97c48e00a49872200f9b1d1b111225f875a5c7cb1f7a6401e58ab",
+      "bytes": 4575823,
+      "sha256": "3edaf5c14022fc2c726de7a32793f3e4cb08138548f6b6e04ffbb44e12f3de33",
       "over_50mb": false
     },
     {
       "path": "data/starter/csv/purchase_order.csv",
       "rows": 1010,
-      "bytes": 124363,
-      "sha256": "305ea6f1af65e3a1bfdeec44ff7ab3a93d7c0ba2801e32ea4598f8f052871466",
+      "bytes": 124358,
+      "sha256": "98de0ca63478aaad69eced879a02258283a1e776d6101e567487074ed08961b2",
       "over_50mb": false
     },
     {
       "path": "data/starter/csv/purchase_order_event.csv",
       "rows": 3558,
       "bytes": 318829,
-      "sha256": "c1f16edd5d3f88b3d46973aeb109c2262978b4f0081be1b2bfc11c85afb422dc",
+      "sha256": "1ccd2ffe9cb7798e32c8d61d75db325ee5fd8d54c07af8dc3ca2eebda9b49609",
       "over_50mb": false
     },
     {
       "path": "data/starter/csv/shortage.csv",
-      "rows": 233,
-      "bytes": 92655,
-      "sha256": "50b69eede16ffafde8e1d5c7e6d6b8fcb3aecdd343cb702ea52011091e3cad00",
+      "rows": 203,
+      "bytes": 80952,
+      "sha256": "ebc758741df70ee87b9ab6e84f39bef3c746c71277c0c83033fc4122cf9a30a7",
       "over_50mb": false
     },
     {
       "path": "data/starter/csv/shortage_cause.csv",
-      "rows": 446,
-      "bytes": 30469,
-      "sha256": "31cbb908e721f0c62a05c20d4fa08d55b4f4ac8304b794f2d9bed571557495b4",
+      "rows": 404,
+      "bytes": 27476,
+      "sha256": "b21bae750fc8d6b13fe5c557647f1b0d1950777672f0482a82dd528aa6c58a1a",
       "over_50mb": false
     },
     {
       "path": "data/starter/csv/shortage_event.csv",
-      "rows": 699,
-      "bytes": 79008,
-      "sha256": "6b92782f88be0eeb584ffdc27ae049ad450cfc9609e8679f12711a67037e9032",
+      "rows": 609,
+      "bytes": 68832,
+      "sha256": "ffebd194fe904493147e910afd07d6a01f5e27482417dda18a9ca86087a443e2",
       "over_50mb": false
     },
     {
@@ -171,8 +171,8 @@
     {
       "path": "data/starter/csv/supplier_capacity.csv",
       "rows": 2600,
-      "bytes": 88083,
-      "sha256": "b3b83888773cbdb7e19a1d7f1bfbac84558ffa1bce0d158286e09239c4b78ae2",
+      "bytes": 88107,
+      "sha256": "0f6568fd05af60c6b70089efbe56c30b8da5c280633298b504e0da99623ca9c5",
       "over_50mb": false
     },
     {
@@ -192,8 +192,8 @@
     {
       "path": "data/starter/json/exception.json",
       "rows": 50,
-      "bytes": 21706,
-      "sha256": "ba90a6e290aa82772ac00f2d4a9b9af2499243222b711d25cc646636c0274740",
+      "bytes": 21418,
+      "sha256": "e7835dfb5027908924860774c9aa1d34672b6c46cacaef76cdd675eed9aaaa86",
       "over_50mb": false
     },
     {
@@ -207,7 +207,7 @@
       "path": "data/starter/json/inventory.json",
       "rows": 2245,
       "bytes": 361119,
-      "sha256": "25620adc1be534533c2b732bf5905dbc827cb3afe9c365675f175892b59f8a8e",
+      "sha256": "623d793b1fabed455ee40a3f3b71128c37c7d658f4c6b61bf1f3691a50a4154c",
       "over_50mb": false
     },
     {
@@ -233,30 +233,30 @@
     },
     {
       "path": "data/starter/json/mitigation_ledger.json",
-      "rows": 928,
-      "bytes": 188676,
-      "sha256": "e149540a4cc4b4096bfbb9b9d412809a3a9e7cd64e0394771451bb8aaa4bf60c",
+      "rows": 700,
+      "bytes": 142353,
+      "sha256": "8ab1779301006fc69e1ade83b7c498006b80539a58ad1348a98bd018009aa949",
       "over_50mb": false
     },
     {
       "path": "data/starter/json/mitigation_option.json",
-      "rows": 973,
-      "bytes": 603235,
-      "sha256": "6d1052e54f137c6bc79197eee0add6648b5e6d0bc5f89168a362be46ac5f4c17",
+      "rows": 886,
+      "bytes": 549621,
+      "sha256": "d9e4d0efda1964ed0c6193b4950f4b97adda9d04092b0f43a31281b2d78ee2c8",
       "over_50mb": false
     },
     {
       "path": "data/starter/json/mitigation_proposal.json",
       "rows": 10,
-      "bytes": 2422,
-      "sha256": "a883f7ef6cb92f2b42b7d50a20d416ae37c1c272e9653ba1e2c542e976977b0d",
+      "bytes": 2423,
+      "sha256": "bc03942932fccf011c413a6855db638a955c158254b691862cdec3e08a15687b",
       "over_50mb": false
     },
     {
       "path": "data/starter/json/planned_order.json",
-      "rows": 15907,
-      "bytes": 5386706,
-      "sha256": "8c7140a89c1f51514b7cdb7cabada272a43f79fce010e591cc95128307a5734d",
+      "rows": 15818,
+      "bytes": 5356710,
+      "sha256": "3aa03233c5a5284ebb0c9c4ba8be96e7652cb8327a339f84c1a8f3457e7aebca",
       "over_50mb": false
     },
     {
@@ -268,51 +268,51 @@
     },
     {
       "path": "data/starter/json/production_plan.json",
-      "rows": 1263,
-      "bytes": 289109,
-      "sha256": "354348ee566e9ea8d7e8678530156fdb1bc3c5ab02aea4486a51e82332e9215f",
+      "rows": 1242,
+      "bytes": 284327,
+      "sha256": "e9674721937b3e90a93a5c04e5b3e7583fed7c304f542778eb8500fe1be41acf",
       "over_50mb": false
     },
     {
       "path": "data/starter/json/projected_balance.json",
       "rows": 92404,
-      "bytes": 20654869,
-      "sha256": "e14ab989520ac71e78fbdb1c90216525201f9bb1b69362faea8f8b24db878396",
+      "bytes": 20653979,
+      "sha256": "5539058966e3a664e28ed0810c98d4cb5d402dbe2b31388a84ec946b18b84385",
       "over_50mb": false
     },
     {
       "path": "data/starter/json/purchase_order.json",
       "rows": 1010,
-      "bytes": 394835,
-      "sha256": "2f950e17e94fa746e37d13a2fda454f1d8245249c2e7f8f45f4bbf729596fc41",
+      "bytes": 394830,
+      "sha256": "60c55b680fcdc149e24bb3d706efc4a2b7efb497b8189ac759bf1591c327a896",
       "over_50mb": false
     },
     {
       "path": "data/starter/json/purchase_order_event.json",
       "rows": 3558,
       "bytes": 694368,
-      "sha256": "f10d81882ed2d9e1b026a887f5b2efd72fce71865ab2c49f7e2761cb85991aca",
+      "sha256": "b9502e217d3593dbaee9e188056be54c4fb977aece4a0f4f7e823dfa0d770dad",
       "over_50mb": false
     },
     {
       "path": "data/starter/json/shortage.json",
-      "rows": 233,
-      "bytes": 146957,
-      "sha256": "105642561ed3238a3b98f48d6a1e20d9abdeabe96754f3c163336ac3cd7bd18c",
+      "rows": 203,
+      "bytes": 128243,
+      "sha256": "d7affe67fdc11b96c076200d7011be698bb48e9e4ec34739b38d9562a7faa310",
       "over_50mb": false
     },
     {
       "path": "data/starter/json/shortage_cause.json",
-      "rows": 446,
-      "bytes": 70096,
-      "sha256": "33f9bd34b949e48f2454df7260da0382199036eb6337bfd90a67b500dbbf1326",
+      "rows": 404,
+      "bytes": 63365,
+      "sha256": "bfa53655a02052bab60279da0a665c9fd55630b81a61c040f9bf2735141248a2",
       "over_50mb": false
     },
     {
       "path": "data/starter/json/shortage_event.json",
-      "rows": 699,
-      "bytes": 170486,
-      "sha256": "81d4357af7122a37fa808b5ea720dabf66ed78c10f580d2bf2e5dd5d8f5bc149",
+      "rows": 609,
+      "bytes": 148520,
+      "sha256": "d6bf3f2097a99c0d89d0e6ab05283d519ab0748fb3ad866a8668f9d257743011",
       "over_50mb": false
     },
     {
@@ -346,8 +346,8 @@
     {
       "path": "data/starter/json/supplier_capacity.json",
       "rows": 2600,
-      "bytes": 246640,
-      "sha256": "85c84a7313ea2b1dbcdbfd760ae9426b4c07efefec78fb96f4b400ba9d931157",
+      "bytes": 246664,
+      "sha256": "7f7be6003617aac73cbed612e8eaabebc29b10cd950480425bd274f4cfb09e4c",
       "over_50mb": false
     },
     {
@@ -359,16 +359,16 @@
     },
     {
       "path": "data/starter/sql/seed.sql",
-      "rows": 219066,
-      "bytes": 20525566,
-      "sha256": "5f6369f6ae6d99d249d7ff0e397ccc61b2d640a75ec92bc7def6c7b19f5c09bc",
+      "rows": 218479,
+      "bytes": 20440429,
+      "sha256": "aa882fa339701e985f26a6e3b53c301b62d95f193ed2af1c176bdf1c9f1c8c6a",
       "over_50mb": false
     },
     {
       "path": "ground_truth/starter/ground_truth.csv",
       "rows": 65,
-      "bytes": 20810,
-      "sha256": "8ba5bec64951dc872010628455a1d5ebe894aa1361eb742e4157a824c858a99c",
+      "bytes": 20809,
+      "sha256": "31c844bccf89d55f9e3dca665edc6c3bc6c224ddb2b233c93e8af458ae4457a2",
       "over_50mb": false
     }
   ]

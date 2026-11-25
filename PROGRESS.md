@@ -72,6 +72,11 @@
 - Fresh-clone test (2026-11-25): `git clone` into /tmp, new venv (Python 3.15), `pip install -e .`, `python -m planner run-all --scale starter` -> exit 0 in 46 s, 0 unexpected failures, repro IDENTICAL, `git status` clean (every regenerated file byte-identical to the commit). `pip install -e ".[dev]"` + `pytest` -> 140 passed. Repeated on Python 3.12: 140 passed, run-all exit 0, byte-identical.
 - Section 18 self-check: all items confirmed (see README section 13).
 
+## Post-review fixes — done (2026-11-25, after tag `v1-submittable`)
+- Minimum coverage rule (`policy.min_coverage_pct` 0.25): no recommended non-backorder option below 25%; no compliant option at that level -> BACKORDER, ESCALATED above ₹2,00,000 value at risk, else BACKORDER_ACCEPTED. New check `mitigation_min_coverage` (244 checks); tests for the rule, `recommend` and a mutation.
+- Long episodes bounded: supplier capacity is lot-feasible (>= 2 minimum lots per week, whole order increments) and each disruption gets a catch-up window that repays its lost output. Full scale: longest episode 51 -> 10 weeks, 59 -> 0 episodes >= 20 weeks; VaR ₹72.3M -> ₹13.8M, recovered 15.0% -> 41.3%; shortage rate 10.53% (starter 11.14%). Tests for the episode bound and the capacity floor.
+- README: reproducibility note on the second-machine clone (Linux, Python 3.13) and why PNGs are excluded from checksums; numbers refreshed. Tests: 145 passed.
+
 ## Next
 - Phase 8 (optional): Streamlit viewer.
 
@@ -80,4 +85,4 @@
 - One recommended option per shortage; combinations (two transfers) are not proposed.
 - Headroom is 1.15-1.3, above the requested 1.0-1.15 (see Phase 3 decisions).
 - At starter the PO_QTY_EQUALS_MOQ picks are POs already at MOQ (label-only, stated in the label).
-- Full-scale mitigation recovery is much lower than starter (26% of units, 15% of VaR): most full-scale VaR sits in W01-W03 lead-time-fence and supplier-capacity shortages that no option can reach in time. `generate` plans twice in memory.
+- Full-scale mitigation recovery is lower than starter (36% of units, 41% of VaR vs 49% / 82%): much of the full-scale VaR sits in W01-W03 lead-time-fence and disrupted-supplier shortages that no option can reach in time. `generate` plans twice in memory.

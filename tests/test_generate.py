@@ -1,6 +1,7 @@
 import hashlib
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -171,3 +172,16 @@ def test_same_seed_identical_bytes_different_seed_differs(tmp_path, test_cfg, ge
     d1, d3 = _digests(out1), _digests(out3)
     assert d1.keys() == d3.keys()
     assert sum(d1[k] != d3[k] for k in d1) >= len(d1) - 1   # location master may coincide; data must differ
+
+
+def test_supplier_capacity_fits_minimum_lots(baseline, test_cfg):
+    """Normal weekly capacity holds min_lots_per_week x the largest minimum lot of the supplier's primary lines
+    (disrupted weeks may fall below; at least half the weeks of every supplier are normal)."""
+    from planner.generate.supply import lot_granularity
+    _, t = baseline
+    cap = t["supplier_capacity"]
+    sup = np.array(sorted(cap["supplier_id"].unique()), dtype=object)
+    minlot, _ = lot_granularity(t["supplier_sku"], sup)
+    med = cap.groupby("supplier_id")["capacity_qty_ea"].median().reindex(sup).to_numpy()
+    lots = float(test_cfg["supply"]["min_lots_per_week"])
+    assert (med >= np.floor(minlot * lots)).all()

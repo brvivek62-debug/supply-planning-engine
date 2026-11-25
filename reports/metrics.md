@@ -9,14 +9,14 @@ detection metrics compare the `exception` table with `ground_truth/` (matched on
 |---|---|
 | SKU-locations | 1,777 |
 | Total demand (finished SKUs, 52 wk) | 9,376,097 EA |
-| SKU-locations with >= 1 shortage | 208 (11.71%) |
-| Shortages | 233 (BELOW_SAFETY_STOCK 167, STOCKOUT 66) |
-| Primary cause | DEMAND_SPIKE 45, LEAD_TIME_FENCE 47, LOW_OPENING_STOCK 16, PO_DELAYED 15, PRODUCTION_CAPACITY 31, SUPPLIER_CAPACITY 79 |
-| Shortages with cause (any) | COMPONENT_SHORTAGE 3, DEMAND_SPIKE 83, LEAD_TIME_FENCE 116, LOW_OPENING_STOCK 34, PO_DELAYED 28, PRODUCTION_CAPACITY 42, SUPPLIER_CAPACITY 79 |
-| Fill rate before mitigation | 99.9839% |
-| Fill rate after recommended mitigations | 99.9926% |
-| Fill rate, only the 196 finished SKU-locations with a shortage — before | 99.7210% |
-| Fill rate, only SKU-locations with a shortage — after recommended mitigations | 99.8718% |
+| SKU-locations with >= 1 shortage | 198 (11.14%) |
+| Shortages | 203 (BELOW_SAFETY_STOCK 144, STOCKOUT 59) |
+| Primary cause | DEMAND_SPIKE 43, LEAD_TIME_FENCE 48, LOW_OPENING_STOCK 13, PO_DELAYED 14, PRODUCTION_CAPACITY 18, SUPPLIER_CAPACITY 67 |
+| Shortages with cause (any) | COMPONENT_SHORTAGE 1, DEMAND_SPIKE 76, LEAD_TIME_FENCE 115, LOW_OPENING_STOCK 31, PO_DELAYED 27, PRODUCTION_CAPACITY 26, SUPPLIER_CAPACITY 68 |
+| Fill rate before mitigation | 99.9846% |
+| Fill rate after recommended mitigations | 99.9925% |
+| Fill rate, only the 188 finished SKU-locations with a shortage — before | 99.7165% |
+| Fill rate, only SKU-locations with a shortage — after recommended mitigations | 99.8619% |
 
 Fill rate = 1 - sum(min(demand, backlog)) / sum(demand) per SKU-location-week (backlog semantics), over the
 52-week horizon of finished SKUs. The overall rate is dominated by SKU-locations that are never short; the
@@ -26,26 +26,26 @@ short-only rate shows the effect of the mitigations where it applies.
 
 | Metric | Value |
 |---|---|
-| Shortage units (sum of below_ss_qty_ea = gap to safety stock) | 12,342 EA |
-| Covered by recommended mitigations | 6,359 EA (**51.52%**) |
-| Stockout units (sum of shortage_qty_ea) before -> after | 1,503 -> 694 EA |
-| Value at risk before | INR 469,100.44 |
-| Value at risk after (stockout depth left on the post-mitigation balance x unit price) | INR 64,640.13 |
-| **Value at risk recovered** | **INR 404,460.31 (86.22%)** |
+| Shortage units (sum of below_ss_qty_ea = gap to safety stock) | 11,059 EA |
+| Covered by recommended mitigations | 5,411 EA (**48.93%**) |
+| Stockout units (sum of shortage_qty_ea) before -> after | 1,442 -> 703 EA |
+| Value at risk before | INR 465,437.47 |
+| Value at risk after (stockout depth left on the post-mitigation balance x unit price) | INR 84,029.28 |
+| **Value at risk recovered** | **INR 381,408.19 (81.95%)** |
 
 ## Mitigations
 
 | Metric | Value |
 |---|---|
-| Options generated | 973 (ALTERNATE_SUPPLIER 70, BACKORDER 233, EXPEDITE_PO 12, INCREASE_PRODUCTION 44, SUBSTITUTE_SKU 28, TRANSFER 586) |
-| VIOLATION alternatives (never recommended) | 39 |
-| Recommended mix | ALTERNATE_SUPPLIER 11, BACKORDER 47, EXPEDITE_PO 5, INCREASE_PRODUCTION 42, SUBSTITUTE_SKU 6, TRANSFER 122 |
-| Shortages with a COMPLIANT non-backorder recommendation | 79.83% |
-| Fully covered (coverage 100%) | 59.66% |
-| Total mitigation cost | INR 244,068.55 (non-backorder INR 236,068.65) |
-| Cost per covered EA (non-backorder) | INR 37.12 over 6,359 EA |
-| Shortage status | BACKORDER_ACCEPTED 47, ESCALATED 25, MITIGATION_SELECTED 161 |
-| Escalated for OPERATIONS_MANAGER approval | 25 |
+| Options generated | 886 (ALTERNATE_SUPPLIER 62, BACKORDER 203, EXPEDITE_PO 8, INCREASE_PRODUCTION 27, SUBSTITUTE_SKU 28, TRANSFER 558) |
+| VIOLATION alternatives (never recommended) | 38 |
+| Recommended mix | ALTERNATE_SUPPLIER 8, BACKORDER 58, EXPEDITE_PO 4, INCREASE_PRODUCTION 26, SUBSTITUTE_SKU 5, TRANSFER 102 |
+| Shortages with a COMPLIANT non-backorder recommendation | 71.43% |
+| Fully covered (coverage 100%) | 59.61% |
+| Total mitigation cost | INR 231,565.12 (non-backorder INR 188,790.13) |
+| Cost per covered EA (non-backorder) | INR 34.89 over 5,411 EA |
+| Shortage status | BACKORDER_ACCEPTED 58, ESCALATED 18, MITIGATION_SELECTED 127 |
+| Escalated for OPERATIONS_MANAGER approval | 18 |
 | Recommended VIOLATION options | 0 |
 
 ## Anomaly detection (exception table vs ground truth)
@@ -72,23 +72,23 @@ Expected outcomes verified: 20 / 20 machine-checkable labels (LEAD_TIME_IGNORED:
 
 | priority_rank | shortage_id | shortage_type | shortage_qty_ea | value_at_risk_inr | primary_cause | status | recommended | explanation |
 |---|---|---|---|---|---|---|---|---|
-| 1 | SHORT-2026-000131 | STOCKOUT | 36 | 113588.28 | LEAD_TIME_FENCE | MITIGATION_SELECTED | TRANSFER (100%, INR 735) | Stockout of 36 EA for SKU-000149 at LOC-008 in 2026W04–W05 (low point -36 EA in 2026W05, safety stock 62 EA): no new order can land before 2026W06 (LT-000343, 5-week SEA lane). |
-| 2 | SHORT-2026-000162 | STOCKOUT | 124 | 109364.28 | SUPPLIER_CAPACITY | MITIGATION_SELECTED | ALTERNATE_SUPPLIER (100%, INR 15,365) | Stockout of 124 EA for SKU-000253 at LOC-008 in 2026W06–W08 (low point -124 EA in 2026W08, safety stock 34 EA): SUP-0016 had no spare capacity for this SKU in 2026W06–W08 (3 wk); unmet requirement reached 360 EA by 2026W08 (CAP-0000788); SEASONAL_PEAK demand +148% vs baseline in 2026W06 (DEM-SKU-000253-LOC-008-2026W06). |
-| 3 | SHORT-2026-000140 | STOCKOUT | 30 | 23192.7 | LOW_OPENING_STOCK | MITIGATION_SELECTED | TRANSFER (100%, INR 126) | Stockout of 30 EA for SKU-000232 at LOC-010 in 2026W04–W08 (low point -30 EA in 2026W08, safety stock 12 EA): opening stock 16 EA covers 2.7 weeks, short of the 8-week lead time plus safety stock 12 EA (INV-0001395); no new order can land before 2026W09 (LT-000280, 8-week SEA lane); SEASONAL_PEAK demand +117% vs baseline in 2026W05 (DEM-SKU-000232-LOC-010-2026W05) (+1 more). |
-| 4 | SHORT-2026-000116 | STOCKOUT | 20 | 28930.6 | DEMAND_SPIKE | MITIGATION_SELECTED | TRANSFER (100%, INR 108) | Stockout of 20 EA for SKU-000015 at LOC-009 in 2026W04 (low point -20 EA in 2026W04, safety stock 16 EA): PROMO demand +567% vs baseline in 2026W04 (DEM-SKU-000015-LOC-009-2026W04); no new order can land before 2026W05 (LT-000244, 4-week RAIL lane). |
-| 5 | SHORT-2026-000106 | STOCKOUT | 158 | 17198.3 | SUPPLIER_CAPACITY | MITIGATION_SELECTED | TRANSFER (2%, INR 45) | Stockout of 158 EA for SKU-000228 at LOC-005 in 2026W03–W04 (low point -158 EA in 2026W04, safety stock 110 EA): SUP-0012 had no spare capacity for this SKU in 2026W03–W04 (2 wk); unmet requirement reached 680 EA by 2026W04 (CAP-0000576). |
-| 6 | SHORT-2026-000035 | STOCKOUT | 13 | 12930.97 | LEAD_TIME_FENCE | MITIGATION_SELECTED | TRANSFER (83%, INR 128) | Stockout of 13 EA for SKU-000017 at LOC-009 in 2026W02–W04 (low point -13 EA in 2026W04, safety stock 5 EA): no new order can land before 2026W05 (LT-000183, 4-week RAIL lane); PO-2026-000467 (11 EA) delayed 3 wk from 2026W03 to 2026W06; PROMO demand +180% vs baseline in 2026W02 (DEM-SKU-000017-LOC-009-2026W02); opening stock 17 EA covers 3.5 weeks, short of the 4-week lead time plus safety stock 5 EA (INV-0000112). |
-| 7 | SHORT-2026-000168 | STOCKOUT | 27 | 23813.19 | SUPPLIER_CAPACITY | MITIGATION_SELECTED | SUBSTITUTE_SKU (29%, INR 2,960) | Stockout of 27 EA for SKU-000253 at LOC-007 in 2026W07–W08 (low point -27 EA in 2026W08, safety stock 39 EA): SUP-0016 had no spare capacity for this SKU in 2026W07–W08 (2 wk); unmet requirement reached 240 EA by 2026W08 (CAP-0000788); SEASONAL_PEAK demand +121% vs baseline in 2026W07 (DEM-SKU-000253-LOC-007-2026W07). |
-| 8 | SHORT-2026-000029 | STOCKOUT | 119 | 8381.17 | PO_DELAYED | MITIGATION_SELECTED | TRANSFER (44%, INR 1,508) | Stockout of 119 EA for SKU-000284 at LOC-003 in 2026W01–W03 (low point -119 EA in 2026W03, safety stock 82 EA): PO-2026-000370 (240 EA) delayed 3 wk from 2026W01 to 2026W04; no new order can land before 2026W04 (LT-000050, 3-week RAIL lane); opening stock 138 EA covers 1.7 weeks, short of the 3-week lead time plus safety stock 82 EA (INV-0001693). |
-| 9 | SHORT-2026-000076 | STOCKOUT | 12 | 20631.12 | LEAD_TIME_FENCE | MITIGATION_SELECTED | TRANSFER (100%, INR 188) | Stockout of 12 EA for SKU-000056 at LOC-007 in 2026W03 (low point -12 EA in 2026W03, safety stock 13 EA): no new order can land before 2026W04 (LT-000153, 3-week ROAD lane). |
-| 10 | SHORT-2026-000039 | STOCKOUT | 89 | 13779.87 | SUPPLIER_CAPACITY | MITIGATION_SELECTED | ALTERNATE_SUPPLIER (72%, INR 1,109) | Stockout of 89 EA for SKU-000036 at LOC-004 in 2026W02–W04 (low point -89 EA in 2026W04, safety stock 44 EA): SUP-0021 had no spare capacity for this SKU in 2026W04 (1 wk); unmet requirement reached 288 EA by 2026W04 (CAP-0001044); no new order can land before 2026W04 (LT-000209, 3-week RAIL lane); SEASONAL_PEAK demand +58% vs baseline in 2026W02 (DEM-SKU-000036-LOC-004-2026W02). |
-| 11 | SHORT-2026-000108 | STOCKOUT | 136 | 7756.08 | SUPPLIER_CAPACITY | MITIGATION_SELECTED | TRANSFER (2%, INR 38) | Stockout of 136 EA for SKU-000245 at LOC-004 in 2026W03–W05 (low point -136 EA in 2026W05, safety stock 102 EA): SUP-0012 had no spare capacity for this SKU in 2026W03–W05 (3 wk); unmet requirement reached 740 EA by 2026W05 (CAP-0000577). |
-| 12 | SHORT-2026-000014 | STOCKOUT | 77 | 7845.53 | DEMAND_SPIKE | BACKORDER_ACCEPTED | BACKORDER (0%, INR 4,262) | Stockout of 77 EA for SKU-000136 at LOC-008 in 2026W01–W02 (low point -77 EA in 2026W02, safety stock 54 EA): PROMO demand +450% vs baseline in 2026W01 (DEM-SKU-000136-LOC-008-2026W01); no new order can land before 2026W03 (LT-000171, 2-week RAIL lane). |
-| 13 | SHORT-2026-000099 | STOCKOUT | 20 | 4265.8 | LEAD_TIME_FENCE | MITIGATION_SELECTED | TRANSFER (33%, INR 172) | Stockout of 20 EA for SKU-000169 at LOC-004 in 2026W03–W04 (low point -20 EA in 2026W04, safety stock 49 EA): no new order can land before 2026W05 (LT-000138, 4-week RAIL lane); PO-2026-000639 (55 EA) delayed 2 wk from 2026W03 to 2026W05; opening stock 108 EA covers 4.4 weeks, short of the 4-week lead time plus safety stock 49 EA (INV-0001022). |
-| 14 | SHORT-2026-000094 | STOCKOUT | 34 | 10058.9 | LOW_OPENING_STOCK | MITIGATION_SELECTED | TRANSFER (100%, INR 990) | Stockout of 34 EA for SKU-000143 at LOC-004 in 2026W03–W06 (low point -34 EA in 2026W06, safety stock 98 EA): opening stock 216 EA covers 4.4 weeks, short of the 6-week lead time plus safety stock 98 EA (INV-0000873); PO-2026-000301 (168 EA) delayed 1 wk from 2026W03 to 2026W04; no new order can land before 2026W07 (LT-000476, 6-week SEA lane); PROMO demand +205% vs baseline in 2026W04 (DEM-SKU-000143-LOC-004-2026W04). |
-| 15 | SHORT-2026-000159 | STOCKOUT | 33 | 6836.61 | LEAD_TIME_FENCE | MITIGATION_SELECTED | SUBSTITUTE_SKU (100%, INR 272) | Stockout of 33 EA for SKU-000097 at LOC-004 in 2026W06–W08 (low point -33 EA in 2026W08, safety stock 7 EA): no new order can land before 2026W09 (LT-000280, 8-week SEA lane); opening stock 30 EA covers 4.4 weeks, short of the 8-week lead time plus safety stock 7 EA (INV-0000590); PROMO demand +333% vs baseline in 2026W07 (DEM-SKU-000097-LOC-004-2026W07). |
-| 16 | SHORT-2026-000026 | STOCKOUT | 2 | 1546.18 | LOW_OPENING_STOCK | BACKORDER_ACCEPTED | BACKORDER (0%, INR 565) | Stockout of 2 EA for SKU-000232 at LOC-010 in 2026W01 (low point -2 EA in 2026W01, safety stock 12 EA): opening stock 16 EA covers 2.7 weeks, short of the 8-week lead time plus safety stock 12 EA (INV-0001395); PO-2026-000168 (25 EA) delayed 1 wk from 2026W01 to 2026W02; no new order can land before 2026W09 (LT-000280, 8-week SEA lane). |
-| 17 | SHORT-2026-000037 | STOCKOUT | 3 | 6235.92 | DEMAND_SPIKE | MITIGATION_SELECTED | TRANSFER (100%, INR 36) | Stockout of 3 EA for SKU-000024 at LOC-010 in 2026W02–W03 (low point -3 EA in 2026W03, safety stock 9 EA): PROMO demand +350% vs baseline in 2026W02 (DEM-SKU-000024-LOC-010-2026W02); no new order can land before 2026W04 (LT-000321, 3-week RAIL lane). |
-| 18 | SHORT-2026-000019 | STOCKOUT | 6 | 1279.74 | DEMAND_SPIKE | BACKORDER_ACCEPTED | BACKORDER (0%, INR 500) | Stockout of 6 EA for SKU-000169 at LOC-007 in 2026W01–W02 (low point -6 EA in 2026W02, safety stock 22 EA): PROMO demand +333% vs baseline in 2026W01 (DEM-SKU-000169-LOC-007-2026W01) (+1 more); no new order can land before 2026W03 (LT-000143, 2-week RAIL lane). |
-| 19 | SHORT-2026-000143 | STOCKOUT | 2 | 3479.22 | DEMAND_SPIKE | MITIGATION_SELECTED | TRANSFER (100%, INR 158) | Stockout of 2 EA for SKU-000260 at LOC-010 in 2026W04–W05 (low point -2 EA in 2026W05, safety stock 19 EA): PROMO demand +544% vs baseline in 2026W04 (DEM-SKU-000260-LOC-010-2026W04); no new order can land before 2026W06 (LT-000341, 5-week SEA lane). |
-| 20 | SHORT-2026-000147 | STOCKOUT | 19 | 3793.35 | SUPPLIER_CAPACITY | MITIGATION_SELECTED | ALTERNATE_SUPPLIER (100%, INR 223) | Stockout of 19 EA for SKU-000014 at LOC-004 in 2026W05 (low point -19 EA in 2026W05, safety stock 18 EA): SUP-0012 had no spare capacity for this SKU in 2026W05 (1 wk); unmet requirement reached 108 EA by 2026W05 (CAP-0000577); PROMO demand +456% vs baseline in 2026W05 (DEM-SKU-000014-LOC-004-2026W05). |
+| 1 | SHORT-2026-000128 | STOCKOUT | 36 | 113588.28 | LEAD_TIME_FENCE | MITIGATION_SELECTED | TRANSFER (100%, INR 735) | Stockout of 36 EA for SKU-000149 at LOC-008 in 2026W04–W05 (low point -36 EA in 2026W05, safety stock 62 EA): no new order can land before 2026W06 (LT-000343, 5-week SEA lane). |
+| 2 | SHORT-2026-000159 | STOCKOUT | 124 | 109364.28 | SUPPLIER_CAPACITY | MITIGATION_SELECTED | ALTERNATE_SUPPLIER (100%, INR 15,365) | Stockout of 124 EA for SKU-000253 at LOC-008 in 2026W06–W08 (low point -124 EA in 2026W08, safety stock 34 EA): SUP-0016 had no spare capacity for this SKU in 2026W06–W08 (3 wk); unmet requirement reached 360 EA by 2026W08 (CAP-0000788); SEASONAL_PEAK demand +148% vs baseline in 2026W06 (DEM-SKU-000253-LOC-008-2026W06). |
+| 3 | SHORT-2026-000137 | STOCKOUT | 30 | 23192.7 | LOW_OPENING_STOCK | MITIGATION_SELECTED | TRANSFER (100%, INR 126) | Stockout of 30 EA for SKU-000232 at LOC-010 in 2026W04–W08 (low point -30 EA in 2026W08, safety stock 12 EA): opening stock 16 EA covers 2.7 weeks, short of the 8-week lead time plus safety stock 12 EA (INV-0001395); no new order can land before 2026W09 (LT-000280, 8-week SEA lane); SEASONAL_PEAK demand +117% vs baseline in 2026W05 (DEM-SKU-000232-LOC-010-2026W05) (+1 more). |
+| 4 | SHORT-2026-000114 | STOCKOUT | 20 | 28930.6 | DEMAND_SPIKE | MITIGATION_SELECTED | TRANSFER (100%, INR 108) | Stockout of 20 EA for SKU-000015 at LOC-009 in 2026W04 (low point -20 EA in 2026W04, safety stock 16 EA): PROMO demand +567% vs baseline in 2026W04 (DEM-SKU-000015-LOC-009-2026W04); no new order can land before 2026W05 (LT-000244, 4-week RAIL lane). |
+| 5 | SHORT-2026-000104 | STOCKOUT | 158 | 17198.3 | SUPPLIER_CAPACITY | BACKORDER_ACCEPTED | BACKORDER (0%, INR 8,488) | Stockout of 158 EA for SKU-000228 at LOC-005 in 2026W03–W04 (low point -158 EA in 2026W04, safety stock 110 EA): SUP-0012 had no spare capacity for this SKU in 2026W03–W04 (2 wk); unmet requirement reached 680 EA by 2026W04 (CAP-0000576). |
+| 6 | SHORT-2026-000034 | STOCKOUT | 13 | 12930.97 | LEAD_TIME_FENCE | MITIGATION_SELECTED | TRANSFER (83%, INR 128) | Stockout of 13 EA for SKU-000017 at LOC-009 in 2026W02–W04 (low point -13 EA in 2026W04, safety stock 5 EA): no new order can land before 2026W05 (LT-000183, 4-week RAIL lane); PO-2026-000467 (11 EA) delayed 3 wk from 2026W03 to 2026W06; PROMO demand +180% vs baseline in 2026W02 (DEM-SKU-000017-LOC-009-2026W02); opening stock 17 EA covers 3.5 weeks, short of the 4-week lead time plus safety stock 5 EA (INV-0000112). |
+| 7 | SHORT-2026-000165 | STOCKOUT | 27 | 23813.19 | SUPPLIER_CAPACITY | BACKORDER_ACCEPTED | BACKORDER (0%, INR 9,435) | Stockout of 27 EA for SKU-000253 at LOC-007 in 2026W07–W08 (low point -27 EA in 2026W08, safety stock 39 EA): SUP-0016 had no spare capacity for this SKU in 2026W07–W08 (2 wk); unmet requirement reached 240 EA by 2026W08 (CAP-0000788); SEASONAL_PEAK demand +121% vs baseline in 2026W07 (DEM-SKU-000253-LOC-007-2026W07). |
+| 8 | SHORT-2026-000028 | STOCKOUT | 119 | 8381.17 | PO_DELAYED | MITIGATION_SELECTED | TRANSFER (44%, INR 1,508) | Stockout of 119 EA for SKU-000284 at LOC-003 in 2026W01–W03 (low point -119 EA in 2026W03, safety stock 82 EA): PO-2026-000370 (240 EA) delayed 3 wk from 2026W01 to 2026W04; no new order can land before 2026W04 (LT-000050, 3-week RAIL lane); opening stock 138 EA covers 1.7 weeks, short of the 3-week lead time plus safety stock 82 EA (INV-0001693). |
+| 9 | SHORT-2026-000073 | STOCKOUT | 12 | 20631.12 | LEAD_TIME_FENCE | MITIGATION_SELECTED | TRANSFER (100%, INR 188) | Stockout of 12 EA for SKU-000056 at LOC-007 in 2026W03 (low point -12 EA in 2026W03, safety stock 13 EA): no new order can land before 2026W04 (LT-000153, 3-week ROAD lane). |
+| 10 | SHORT-2026-000038 | STOCKOUT | 89 | 13779.87 | SUPPLIER_CAPACITY | MITIGATION_SELECTED | ALTERNATE_SUPPLIER (72%, INR 1,109) | Stockout of 89 EA for SKU-000036 at LOC-004 in 2026W02–W04 (low point -89 EA in 2026W04, safety stock 44 EA): SUP-0021 had no spare capacity for this SKU in 2026W04 (1 wk); unmet requirement reached 288 EA by 2026W04 (CAP-0001044); no new order can land before 2026W04 (LT-000209, 3-week RAIL lane); SEASONAL_PEAK demand +58% vs baseline in 2026W02 (DEM-SKU-000036-LOC-004-2026W02). |
+| 11 | SHORT-2026-000106 | STOCKOUT | 136 | 7756.08 | SUPPLIER_CAPACITY | BACKORDER_ACCEPTED | BACKORDER (0%, INR 5,704) | Stockout of 136 EA for SKU-000245 at LOC-004 in 2026W03–W05 (low point -136 EA in 2026W05, safety stock 102 EA): SUP-0012 had no spare capacity for this SKU in 2026W03–W05 (3 wk); unmet requirement reached 740 EA by 2026W05 (CAP-0000577). |
+| 12 | SHORT-2026-000013 | STOCKOUT | 77 | 7845.53 | DEMAND_SPIKE | BACKORDER_ACCEPTED | BACKORDER (0%, INR 4,262) | Stockout of 77 EA for SKU-000136 at LOC-008 in 2026W01–W02 (low point -77 EA in 2026W02, safety stock 54 EA): PROMO demand +450% vs baseline in 2026W01 (DEM-SKU-000136-LOC-008-2026W01); no new order can land before 2026W03 (LT-000171, 2-week RAIL lane). |
+| 13 | SHORT-2026-000097 | STOCKOUT | 20 | 4265.8 | LEAD_TIME_FENCE | BACKORDER_ACCEPTED | BACKORDER (0%, INR 1,667) | Stockout of 20 EA for SKU-000169 at LOC-004 in 2026W03–W04 (low point -20 EA in 2026W04, safety stock 49 EA): no new order can land before 2026W05 (LT-000138, 4-week RAIL lane); PO-2026-000639 (55 EA) delayed 2 wk from 2026W03 to 2026W05; opening stock 108 EA covers 4.4 weeks, short of the 4-week lead time plus safety stock 49 EA (INV-0001022). |
+| 14 | SHORT-2026-000092 | STOCKOUT | 34 | 10058.9 | LOW_OPENING_STOCK | MITIGATION_SELECTED | TRANSFER (100%, INR 990) | Stockout of 34 EA for SKU-000143 at LOC-004 in 2026W03–W06 (low point -34 EA in 2026W06, safety stock 98 EA): opening stock 216 EA covers 4.4 weeks, short of the 6-week lead time plus safety stock 98 EA (INV-0000873); PO-2026-000301 (168 EA) delayed 1 wk from 2026W03 to 2026W04; no new order can land before 2026W07 (LT-000476, 6-week SEA lane); PROMO demand +205% vs baseline in 2026W04 (DEM-SKU-000143-LOC-004-2026W04). |
+| 15 | SHORT-2026-000156 | STOCKOUT | 33 | 6836.61 | LEAD_TIME_FENCE | MITIGATION_SELECTED | SUBSTITUTE_SKU (100%, INR 272) | Stockout of 33 EA for SKU-000097 at LOC-004 in 2026W06–W08 (low point -33 EA in 2026W08, safety stock 7 EA): no new order can land before 2026W09 (LT-000280, 8-week SEA lane); opening stock 30 EA covers 4.4 weeks, short of the 8-week lead time plus safety stock 7 EA (INV-0000590); PROMO demand +333% vs baseline in 2026W07 (DEM-SKU-000097-LOC-004-2026W07). |
+| 16 | SHORT-2026-000025 | STOCKOUT | 2 | 1546.18 | LOW_OPENING_STOCK | BACKORDER_ACCEPTED | BACKORDER (0%, INR 565) | Stockout of 2 EA for SKU-000232 at LOC-010 in 2026W01 (low point -2 EA in 2026W01, safety stock 12 EA): opening stock 16 EA covers 2.7 weeks, short of the 8-week lead time plus safety stock 12 EA (INV-0001395); PO-2026-000168 (25 EA) delayed 1 wk from 2026W01 to 2026W02; no new order can land before 2026W09 (LT-000280, 8-week SEA lane). |
+| 17 | SHORT-2026-000036 | STOCKOUT | 3 | 6235.92 | DEMAND_SPIKE | MITIGATION_SELECTED | TRANSFER (100%, INR 36) | Stockout of 3 EA for SKU-000024 at LOC-010 in 2026W02–W03 (low point -3 EA in 2026W03, safety stock 9 EA): PROMO demand +350% vs baseline in 2026W02 (DEM-SKU-000024-LOC-010-2026W02); no new order can land before 2026W04 (LT-000321, 3-week RAIL lane). |
+| 18 | SHORT-2026-000018 | STOCKOUT | 6 | 1279.74 | DEMAND_SPIKE | BACKORDER_ACCEPTED | BACKORDER (0%, INR 500) | Stockout of 6 EA for SKU-000169 at LOC-007 in 2026W01–W02 (low point -6 EA in 2026W02, safety stock 22 EA): PROMO demand +333% vs baseline in 2026W01 (DEM-SKU-000169-LOC-007-2026W01) (+1 more); no new order can land before 2026W03 (LT-000143, 2-week RAIL lane). |
+| 19 | SHORT-2026-000140 | STOCKOUT | 2 | 3479.22 | DEMAND_SPIKE | MITIGATION_SELECTED | TRANSFER (100%, INR 158) | Stockout of 2 EA for SKU-000260 at LOC-010 in 2026W04–W05 (low point -2 EA in 2026W05, safety stock 19 EA): PROMO demand +544% vs baseline in 2026W04 (DEM-SKU-000260-LOC-010-2026W04); no new order can land before 2026W06 (LT-000341, 5-week SEA lane). |
+| 20 | SHORT-2026-000144 | STOCKOUT | 19 | 3793.35 | SUPPLIER_CAPACITY | MITIGATION_SELECTED | ALTERNATE_SUPPLIER (100%, INR 223) | Stockout of 19 EA for SKU-000014 at LOC-004 in 2026W05 (low point -19 EA in 2026W05, safety stock 18 EA): SUP-0012 had no spare capacity for this SKU in 2026W05 (1 wk); unmet requirement reached 108 EA by 2026W05 (CAP-0000577); PROMO demand +456% vs baseline in 2026W05 (DEM-SKU-000014-LOC-004-2026W05). |

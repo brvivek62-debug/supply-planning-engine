@@ -11,6 +11,7 @@ import pandas as pd
 
 from planner import calendar as cal
 from planner.plan import balance, quality_gate
+from planner.plan.decide import final_status, min_coverage
 from planner.plan.shortages import CRIT_WEIGHT, runs
 from planner.schema import LIFECYCLES
 
@@ -266,7 +267,8 @@ def check_mitigation_options(t, cfg) -> CheckResult:
            | ((t_ == "BACKORDER") & (mo["qty_covered_ea"] != 0)) | (arr > end)).to_numpy()
     # exactly one recommendation per shortage, and it is the best compliant non-backorder option (or backorder)
     per = []
-    cand = mo[(mo["policy_status"] == "COMPLIANT") & (t_ != "BACKORDER") & (mo["qty_covered_ea"] > 0)]
+    cand = mo[(mo["policy_status"] == "COMPLIANT") & (t_ != "BACKORDER") & (mo["qty_covered_ea"] > 0)
+              & (mo["coverage_pct"] >= min_coverage(cfg))]
     best = cand.groupby("shortage_id")["score"].max()
     for sid in sh.index:
         r = mo[(s == sid) & rec]
@@ -280,7 +282,8 @@ def check_mitigation_options(t, cfg) -> CheckResult:
                    np.concatenate([bad, np.array(per, dtype=bool)]), None, None,
                    "ID = MIT-<shortage>-<seq>; covered <= below-SS requirement; coverage = covered / requirement; "
                    "weeks_late; approval rule; VIOLATION <=> reason; required refs; exactly one recommendation per "
-                   "shortage = best-scoring COMPLIANT non-backorder option, else BACKORDER; never a VIOLATION")
+                   "shortage = best-scoring COMPLIANT non-backorder option with coverage >= min_coverage_pct, else "
+                   "BACKORDER; never a VIOLATION")
 
 
 def check_mitigation_policy(t) -> CheckResult:
@@ -399,7 +402,7 @@ def check_mitigation_ledger(t, cfg) -> list[CheckResult]:
     return [r1, r2]
 
 
-def check_decisions(t) -> CheckResult:
+def check_decisions(t, threshold: float) -> CheckResult:
     """Final shortage status follows the recommendation; the final event names the recommended option."""
     sh, mo, ev = t["shortage"], t["mitigation_option"], t["shortage_event"]
     rec = mo[mo["is_recommended"].astype(bool)].set_index("shortage_id")
@@ -410,14 +413,40 @@ def check_decisions(t) -> CheckResult:
             bad.append(True)
             continue
         o, e = rec.loc[r.shortage_id], last.loc[r.shortage_id]
-        want = ("BACKORDER_ACCEPTED" if o["option_type"] == "BACKORDER" else
-                "ESCALATED" if bool(o["requires_approval"]) else "MITIGATION_SELECTED")
+        want, _ = final_status(o["option_type"], bool(o["requires_approval"]), float(r.value_at_risk_inr), threshold)
         bad.append(not (r.status == want == e["to_status"] and e["mitigation_id"] == o["mitigation_id"]))
     return _result("decision_matches_recommendation", "shortage", len(sh), np.array(bad, dtype=bool), sh,
-                   ["shortage_id"], "BACKORDER -> BACKORDER_ACCEPTED; approval needed -> ESCALATED; else "
-                   "MITIGATION_SELECTED; final event carries the recommended mitigation_id")
+                   ["shortage_id"], "BACKORDER -> ESCALATED if value at risk > approval threshold, else "
+                   "BACKORDER_ACCEPTED; approval needed -> ESCALATED; else MITIGATION_SELECTED; final event carries "
+                   "the recommended mitigation_id")
+
+
+def check_min_coverage(t, cfg) -> CheckResult:
+    """A recommended non-backorder option covers >= min_coverage_pct; MITIGATION_SELECTED never below it; a
+    BACKORDER is recommended only when no COMPLIANT non-backorder option reaches the minimum."""
+    sh, mo = t["shortage"], t["mitigation_option"]
+    m = min_coverage(cfg)
+    rec = mo[mo["is_recommended"].astype(bool)].set_index("shortage_id")
+    ok_alt = mo[(mo["policy_status"] == "COMPLIANT") & (mo["option_type"] != "BACKORDER")
+                & (mo["qty_covered_ea"] > 0) & (mo["coverage_pct"] >= m)]["shortage_id"]
+    has_alt = set(ok_alt)
+    bad = []
+    for r in sh.itertuples(index=False):
+        o = rec.loc[r.shortage_id] if r.shortage_id in rec.index else None
+        if o is None:
+            bad.append(True)
+            continue
+        cov = float(o["coverage_pct"])
+        if o["option_type"] == "BACKORDER":
+            bad.append(r.shortage_id in has_alt)
+        else:
+            bad.append(cov < m)                # covers MITIGATION_SELECTED and ESCALATED alike
+    return _result("mitigation_min_coverage", "shortage", len(sh), np.array(bad, dtype=bool), sh, ["shortage_id"],
+                   f"recommended non-backorder coverage_pct >= policy.min_coverage_pct ({m}); MITIGATION_SELECTED "
+                   "never below it; BACKORDER only when no COMPLIANT non-backorder option reaches it")
 
 
 def run_mitigation_checks(t, cfg) -> list[CheckResult]:
+    threshold = float(cfg["policy"]["approval_cost_threshold_inr"])
     return [check_mitigation_options(t, cfg), check_mitigation_policy(t), *check_mitigation_ledger(t, cfg),
-            check_decisions(t)]
+            check_decisions(t, threshold), check_min_coverage(t, cfg)]

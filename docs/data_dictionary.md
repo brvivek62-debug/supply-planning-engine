@@ -616,7 +616,7 @@ Append-only shortage status history.
 | `to_status` | string | Yes | `OPEN`, `MITIGATION_PROPOSED`, `MITIGATION_SELECTED`, `ESCALATED`, `BACKORDER_ACCEPTED` | — | No | — | allowed transition; in allowed values | New status. |
 | `event_ts` | datetime | Yes | — | — | No | — | strictly increasing per shortage_id; ISO 8601 | Planning-run timestamp (as-of date + run sequence). |
 | `actor_role` | string | Yes | `PLANNER`, `OPERATIONS_MANAGER` | — | No | — | in allowed values | Who performed the transition. |
-| `reason_code` | string | Yes | `PAB_BELOW_SAFETY_STOCK`, `OPTIONS_GENERATED`, `BEST_COMPLIANT_OPTION`, `APPROVAL_REQUIRED`, `NO_FEASIBLE_OPTION` | — | No | — | in allowed values | Why. |
+| `reason_code` | string | Yes | `PAB_BELOW_SAFETY_STOCK`, `OPTIONS_GENERATED`, `BEST_COMPLIANT_OPTION`, `APPROVAL_REQUIRED`, `NO_FEASIBLE_OPTION`, `NO_COMPLIANT_OPTION_HIGH_VAR` | — | No | — | in allowed values | Why. |
 | `mitigation_id` | string | No | — | — | No | FK→mitigation_option.mitigation_id | matches ID pattern `mitigation` | Option selected / escalated. |
 
 ## mitigation_proposal

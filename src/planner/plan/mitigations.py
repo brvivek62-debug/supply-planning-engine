@@ -502,7 +502,7 @@ def run(t: dict[str, pd.DataFrame], gate: GateResult, mrp: MrpResult, sh_df: pd.
     opt_df = pd.DataFrame(rows)
     if len(opt_df) == 0:
         opt_df = pd.DataFrame(columns=COLUMNS + ["_effects", "_arrival"])
-    events = decide.events(sh_df, decisions, cfg.as_of_date)
+    events = decide.events(sh_df, decisions, cfg.as_of_date, float(cfg["policy"]["approval_cost_threshold_inr"]))
     last = events.sort_values(["shortage_id", "seq"]).groupby("shortage_id")["to_status"].last()
     sh_out = sh_df.copy()
     sh_out["status"] = sh_out["shortage_id"].map(last).fillna(sh_out["status"])
